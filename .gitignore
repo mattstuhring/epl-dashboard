@@ -1,0 +1,36 @@
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# Local credentials and environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Frontend
+node_modules/
+dist/
+
+# Local runtime data
+*.sqlite3
+*.db
+
+# Python build artifacts
+backend/build/
+backend/*.egg-info/
+
+# Local-only development requirements and agent configuration
+/docs/
+AGENTS.md
+AGENTS.override.md
+/.agents/
+/.codex/
