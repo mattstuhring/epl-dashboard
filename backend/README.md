@@ -62,6 +62,6 @@ The automated tests use sanitized sample responses and injected dependencies. Th
 .venv/bin/pyright
 ```
 
-An authenticated browser smoke check with a locally configured token tests live provider access separately from these offline checks. The user has confirmed the Pi's 64-bit Debian 13/Python 3.13 runtime meets the project's version requirement, but Mac checks and provider mocks do not verify installing or operating this backend on the Pi.
+An authenticated browser smoke check with a locally configured token tests live provider access separately from offline checks. On 2026-10-25, the backend was installed and run on the Pi 5 (Debian 13.7, aarch64, Python 3.13.5) as a manually started systemd service; /api/standings returned standings data and successful refresh state. Sustained operation and resource use have not been measured, and boot startup is intentionally disabled on this Pi.
 
-The local-only project specification, handoff, and Python standard live in root `docs/` for Codex work. They are not present in source clones or Pi deployments; this README contains the standalone backend operations needed there.
+The local-only project specification, handoff, and Python standard live in root docs/ for Codex work. They are not present in source clones or Pi deployments; this README contains the standalone backend operations needed there. The root README describes the intended Raspberry Pi hosting strategy at a high level.
