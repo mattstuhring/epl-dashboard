@@ -12,24 +12,24 @@ The dashboard turns football data into a readable view of the league's ongoing s
 
 - **At-a-glance context:** A layout intended to be readable from across a room and useful without interaction.
 - **Personal focus:** A configurable favorite club, initially Manchester United, helps bring the wider league into focus.
-- **Local and resilient:** The application keeps its data locally and can continue showing the latest successful information when the external provider is unavailable.
+- **Local and resilient:** Designed to run at home and remain useful when the external data service is temporarily unavailable.
 - **Considerate data use:** A central refresh process retrieves provider data; displaying or refreshing the page reads the dashboard's local application data.
 - **League-specific:** The project focuses on the English Premier League and its season-wide context.
 
 ## How it works
 
-The application periodically retrieves football data from football-data.org, translates it into the dashboard's own data model, and stores useful state locally. The browser reads that state from the application and presents it as a single dashboard. Keeping provider access behind the backend makes the provider replaceable, protects credentials from the browser, and lets refresh behavior evolve without coupling it to page visits.
+1. **Football data is collected** from football-data.org on a schedule managed by the application.
+2. **The application organizes it** into a coherent view of the Premier League season.
+3. **The dashboard presents the story** through league and match context, ready to glance at on a screen.
 
-Times are stored in UTC and shown in the configured local timezone. Local persistence supports last-known-good data and season retention, while the dashboard communicates when its information was last updated. The refresh policy is designed to adapt to the football calendar and the information being shown.
+Opening or refreshing the dashboard reads the application's latest available information; it does not trigger a separate football-data.org request for every browser visit.
 
 ## Design goals
 
 - Keep memory, CPU use, disk use, and retained data modest enough for a Raspberry Pi 5 with 4 GB of memory.
 - Prefer lightweight, well-supported dependencies and a small number of application processes.
 - Use local persistence and straightforward operations instead of adding infrastructure that the dashboard does not need.
-- Keep provider integration, application logic, and display concerns separated enough to test and change independently.
-- Keep provider credentials on the server and out of source control and browser code.
-- Grow the product iteratively while keeping the running system understandable and maintainable.
+- Make it practical to run with essentially no ongoing hosting cost on hardware you already own, when a suitable no-cost data plan is available.
 
 ## Technology and dependencies
 
@@ -37,7 +37,7 @@ Times are stored in UTC and shown in the configured local timezone. Local persis
 - **Vite** runs the frontend development server and creates the optimized production assets.
 - **Python 3.12+ and FastAPI** power the local application API and coordinate its lifecycle and data refresh work.
 - **Pydantic and pydantic-settings**, used by FastAPI and the application, validate API data and load typed configuration.
-- **httpx** handles asynchronous requests to the football-data.org API behind a replaceable provider boundary.
+- **httpx** makes requests to the football-data.org API.
 - **SQLite** stores application data locally without a separate database service.
 - **pytest, Ruff, and Pyright** support backend testing, linting, and type checking; **Vitest and Oxlint** support frontend tests and linting.
 
@@ -45,13 +45,43 @@ The intended deployment is a small modular application rather than a collection 
 
 ## Run locally
 
-For a local run, you need Python 3.12 or newer, a Node.js version supported by the frontend's Vite version, and a football-data.org API token. Configure the token for the backend, start the backend application, then start the frontend development server and open its local address in a browser. The backend and frontend READMEs contain the setup commands and project-specific development details: [backend](backend/README.md) and [frontend](frontend/README.md).
+You need Python 3.12+, Node.js 20.19+ or 22.12+, and a football-data.org API token for live data. From the repository root, set up the backend in one terminal:
+
+```bash
+cd backend
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -e .
+cp .env.example .env
+```
+
+Edit `backend/.env` and set `FOOTBALL_DATA_TOKEN` to your token, then start the API from the `backend/` directory:
+
+```bash
+.venv/bin/uvicorn main:app --app-dir src --reload
+```
+
+In a second terminal, start the frontend:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. Keep both servers running while using the page. More setup and troubleshooting details are in the [backend README](backend/README.md) and [frontend README](frontend/README.md).
 
 ## Raspberry Pi kiosk hosting
 
-The primary hosting goal is a cost-effective, locally hosted kiosk on a Raspberry Pi 5 (4 GB), using free software and avoiding paid application hosting. The football-data.org plan and its request limits should be checked against the project's needs; the app is designed to keep provider requests centrally managed and modest.
+My primary hosting goal is a locally hosted kiosk on a Raspberry Pi 5 with 4 GB of memory. In this setup, the Pi runs the dashboard application and displays it full-screen in Chromium; FastAPI serves both the local API and the built frontend. The dashboard does not need a paid cloud host, and the service can be started and stopped as needed so the Pi remains available for other projects.
 
-At a high level, prepare a 64-bit Raspberry Pi OS or compatible Debian desktop, install a supported Python runtime and Git, and obtain Node.js for building the frontend. Check out the project on the Pi, configure the provider token locally, install the backend dependencies, and build the frontend there. Run the application as a local service and open its local address in Chromium kiosk mode. The browser and service can be started and stopped when needed, leaving the Pi available for other projects; optional startup-at-boot behavior can be configured for a dedicated kiosk setup.
+The main requirements are:
+- 64-bit Raspberry Pi OS or compatible desktop Linux
+- Python
+- Node.js
+- Git
+- football-data.org API token. Provider plan availability and request limits determine whether data access can also remain free.
+
+For general Raspberry Pi kiosk concepts and setup options, see the official [Raspberry Pi kiosk mode guide](https://www.raspberrypi.com/tutorials/how-to-use-a-raspberry-pi-in-kiosk-mode/). The guide covers kiosk setup, and this project runs its own local dashboard application on the Pi.
 
 ## Project structure
 
