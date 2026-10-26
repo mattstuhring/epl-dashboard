@@ -3,7 +3,7 @@
 }
 
 .dashboard-shell {
-  width: min(1180px, calc(100% - 64px));
+  width: calc(100% - clamp(32px, 4vw, 80px));
   margin: 0 auto;
 }
 
@@ -67,10 +67,6 @@ thead,
   font-size: 12px;
   font-weight: 600;
   text-align: right;
-}
-
-.page-heading {
-  padding: 28px 0 22px;
 }
 
 h1,
@@ -333,13 +329,32 @@ tbody .favorite-row {
   flex-wrap: wrap;
   gap: 12px 20px;
   margin-bottom: 24px;
-  padding-bottom: 12px;
+  padding: 22px 0;
   border-bottom: 1px solid var(--line);
 }
 
-.view-switcher {
-  display: flex;
+.title-navigation {
+  display: grid;
   gap: 6px;
+}
+
+.title-line {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.view-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.view-indicators {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .rotation-controls,
@@ -392,19 +407,35 @@ tbody .favorite-row {
   }
 }
 
-.view-switcher button {
-  padding: 10px 18px;
+.view-indicators button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  padding: 0;
   border: 0;
-  border-radius: 5px;
   background: transparent;
-  color: var(--muted);
-  font: inherit;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.view-switcher button[aria-pressed="true"] {
+.view-indicators button::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.view-indicators button[aria-pressed="true"]::before {
+  width: 24px;
+  border-color: var(--green);
   background: var(--green);
-  color: white;
+}
+
+.view-indicators button:hover::before {
+  border-color: var(--green);
 }
 
 .team-crest, .crest-fallback {
@@ -687,4 +718,81 @@ tbody .favorite-row {
 
 .standings-toolbar {
   min-height: 0;
+}
+
+
+/* Landscape displays use width for readability and height for row spacing.
+   Keep the normal stacked layout for smaller browser windows. */
+@media (min-width: 1200px) and (min-height: 800px) {
+  .dashboard-shell {
+    --data-font-size: clamp(14px, 1vw, 19px);
+    --crest-size: clamp(26px, 1.7vw, 34px);
+  }
+
+  .topbar {
+    min-height: 56px;
+    padding: 8px 0;
+  }
+
+  .wordmark { font-size: 14px; }
+  .brand-tagline, .season-label { font-size: 14px; }
+
+  h1 { font-size: 40px; }
+
+  .view-toolbar {
+    margin-bottom: 16px;
+    padding: 16px 0;
+  }
+  .rotation-controls, .rotation-interval,
+  .dashboard-controls .favorite-picker > span,
+  .favorite-picker select { font-size: 14px; }
+
+  .standings-grid caption,
+  .fixtures-mode .matchweek-header {
+    padding: 12px 18px;
+  }
+
+  .standings-grid caption,
+  .fixtures-mode .matchweek-header h2 { font-size: 26px; }
+
+  .standings-grid tbody tr {
+    height: clamp(44px, calc((100dvh - 400px) / 10), 64px);
+    font-size: var(--data-font-size);
+  }
+
+  .standings-grid .team-cell { font-size: var(--data-font-size); }
+  .standings-grid th, .standings-grid td { padding-right: 8px; padding-left: 8px; }
+  .standings-grid thead { height: 38px; }
+  .standings-grid thead th { font-size: 12px; }
+
+  .team-crest, .crest-fallback,
+  .standings-grid .team-crest, .standings-grid .crest-fallback {
+    width: var(--crest-size);
+    height: var(--crest-size);
+    line-height: var(--crest-size);
+  }
+
+  .standings-grid .team-crest, .standings-grid .crest-fallback { margin-right: 8px; }
+  .standings-key { font-size: 13px; }
+  .standings-toolbar { padding-bottom: 12px; }
+
+  .fixture-club { font-size: var(--data-font-size); }
+  .fixtures-mode .fixture-row {
+    padding: clamp(2px, calc((100dvh - 900px) / 20), 9px) 18px;
+  }
+  .fixtures-mode .fixture-meta {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 14px;
+  }
+  .fixtures-mode .fixture-score {
+    min-width: 90px;
+    padding: 6px 8px;
+    font-size: var(--data-font-size);
+    line-height: 22px;
+  }
+  .matchweek-header > span { font-size: 13px; }
+
+  .table-footer { padding: 10px 12px; font-size: 12px; }
+  .page-footer { padding: 12px 2px 16px; font-size: 10px; }
 }

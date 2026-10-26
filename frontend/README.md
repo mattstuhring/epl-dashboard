@@ -50,16 +50,16 @@ For a production-like local run, create the Vite build with `npm ci && npm run b
 
 ## Matchweek view and crests
 
-Choose **Matchweeks** in the dashboard navigation to see the provider-numbered current round and following round as chronological lists. Dates and kickoff times use Pacific time; scores preserve zero versus unknown values. In-play, halftime, final, postponed and other statuses are labelled. Favorite-team matches use the standings view's chosen favorite.
+Choose the **Matchweeks** page indicator beside the title to see the provider-numbered current round and following round as chronological lists. Dates and kickoff times use Pacific time; scores preserve zero versus unknown values. In-play, halftime, final, postponed and other statuses are labelled. Favorite-team matches use the standings view's chosen favorite.
 
 The view polls the local `/api/fixtures` endpoint every 60 seconds while open; the backend owns provider polling. Loading, first-fetch errors, stale saved data and empty selected weeks are distinct states. A discreet footer shows the last successful update and next attempt using the same freshness component as standings.
 
 Team crests are now displayed in both standings and fixtures. HTTPS images come from provider-supplied URLs, with initials when missing or failed. The browser may retrieve these images from the crest host; credentials are never sent with them. The backend fetches no image assets, and no additional frontend dependency is required. The selected view is saved in browser storage. View switching supports the optional carousel described below.
 
 
-## Tabs and automatic rotation
+## Page indicators and automatic rotation
 
-New browsers start with rotation paused and a 60-second interval. Select a tab at any time; selecting any tab (including the visible one) pauses rotation indefinitely. Use the small **soccer-ball toggle** beside the interval selector: a green background means auto-rotation is on; a muted ball means it is off. Hover text shows “Auto-rotate: On” or “Auto-rotate: Off”. Keyboard and screen-reader users can operate it as the Auto-rotate switch. There is no inactivity-based automatic resume and mouse movement alone does not change rotation.
+New browsers start with rotation paused and a 60-second interval. Select a page indicator at any time; selecting any view (including the visible one) pauses rotation indefinitely. Use the small **soccer-ball toggle** beside the interval selector: a green background means auto-rotation is on; a muted ball means it is off. Hover text shows “Auto-rotate: On” or “Auto-rotate: Off”. Keyboard and screen-reader users can operate it as the Auto-rotate switch. There is no inactivity-based automatic resume and mouse movement alone does not change rotation.
 
 Use **Every** to select 30 seconds, 1 minute, 2 minutes, or 5 minutes per view. Starting rotation, changing the interval, or advancing to a new view gives that view a full interval. The carousel wraps between League table and Matchweeks. It does not change backend provider schedules; existing local API polling continues as before.
 
@@ -77,3 +77,12 @@ At viewport widths above 1100 pixels the panels sit side by side. At narrower wi
 The shared position key marks Champions League places 1–4, Europa League place 5 and relegation places 18–20, using left-edge color identifiers and matching key swatches. These are configured display bands rather than calculated qualification outcomes.
 
 Favorite club is a global browser preference beside the carousel controls, available in both views once club data loads. It highlights standings and fixtures without filtering out other clubs.
+
+
+## Display scaling
+
+The kiosk target is landscape **1920×1080 at 100% Chromium zoom**. The dashboard uses the available width with modest margins instead of a fixed 1180px column. On landscape windows at least 1200px wide and 800px high, data text and crests scale with width while row spacing responds to available height. Headers and controls remain compact; the page does not use CSS zoom or hide overflowing rows.
+
+At 1080p, data text is 19px and crests about 33px, with both ten-row panels and freshness details visible. Smaller windows keep the existing stacked/scrolling layout as needed. Display resolution, desktop scaling, browser zoom and unusually long data/error messages can affect the fit; local browser verification is separate from testing the physical Pi display.
+
+The page title, small clickable view indicators, rotation settings and global favorite preference share one row on wide screens. The current indicator is a green pill; inactive views use dots with hover labels. Controls wrap on narrower windows. Insight subtitles remain a future enhancement.

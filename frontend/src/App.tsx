@@ -71,15 +71,31 @@ function App() {
         </span>
       </header>
 
-      <section className="page-heading" aria-labelledby="page-title">
-        <h1 id="page-title">{view === 'standings' ? 'League table' : 'Matchweeks'}</h1>
-      </section>
-
-      <div className="view-toolbar">
-        <nav className="view-switcher" aria-label="Dashboard view">
-          <button aria-pressed={view === 'standings'} onClick={() => selectView('standings')}>League table</button>
-          <button aria-pressed={view === 'fixtures'} onClick={() => selectView('fixtures')}>Matchweeks</button>
-        </nav>
+      <section className="view-toolbar" aria-labelledby="page-title">
+        <div className="title-navigation">
+          <div className="title-line">
+          <h1 id="page-title">{view === 'standings' ? 'League table' : 'Matchweeks'}</h1>
+          <nav className="view-indicators" aria-label="Dashboard view">
+            <button
+              aria-label="League table"
+              title="League table"
+              aria-pressed={view === 'standings'}
+              onClick={() => selectView('standings')}
+            />
+            <button
+              aria-label="Matchweeks"
+              title="Matchweeks"
+              aria-pressed={view === 'fixtures'}
+              onClick={() => selectView('fixtures')}
+            />
+          </nav>
+          </div>
+          <p className="view-subtitle">
+            {view === 'standings'
+              ? 'Every place earned. Every point matters.'
+              : 'One match at a time. Watch the story unfold.'}
+          </p>
+        </div>
         <div className="dashboard-controls">
         <div className="rotation-controls" role="group" aria-label="Automatic view rotation">
           <button
@@ -123,7 +139,7 @@ function App() {
             </label>
           )}
         </div>
-      </div>
+      </section>
       {view === 'fixtures' ? <Matchweeks favoriteTeamId={favoriteTeamId} /> : <section className="standings-section" aria-label="Premier League standings">
         <div className="table-toolbar standings-toolbar">
           {standings && standings.rows.length > 0 && (
