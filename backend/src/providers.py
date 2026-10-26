@@ -3,7 +3,7 @@ Isolate football-data.org v4 HTTP details from application code.
 
 `FootballProvider` is the application-facing protocol used by services.
 `FootballDataAdapter` implements it by authenticating, requesting the EPL
-standings endpoint, validating the untrusted response, and mapping the provider
+standings and season-matches endpoints, validating responses, and mapping the provider
 schema into models owned by this application. Keeping this translation here
 allows routes and the frontend contract to remain stable if the provider changes.
 The adapter also owns bounded HTTP setup and translates transport/schema
@@ -18,7 +18,7 @@ from typing import Any, Protocol
 
 import httpx
 
-from models import StandingsResponse, StandingsRow
+from models import Fixture, FixturesResponse, FixtureTeam, StandingsResponse, StandingsRow
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,15 @@ class FootballProvider(Protocol):
 
         Returns:
             A validated application-owned response for the current total table.
+        """
+        ...
+
+    def get_fixtures(self) -> FixturesResponse:
+        """
+        Retrieve a complete normalized EPL season fixture list.
+
+        Returns:
+            Validated season identity, current matchweek and unique matches.
         """
         ...
 
@@ -171,6 +180,91 @@ class FootballDataAdapter:
                 "Could not retrieve valid standings from the data provider"
             ) from exc
 
+    def get_fixtures(self) -> FixturesResponse:
+        """
+        Retrieve season fixtures in one bounded request, validating before storage.
+
+        Returns:
+            Complete normalized season with current matchweek and crest URLs.
+
+        Notes:
+            Missing identity, inconsistent seasons, duplicate matches or count
+            mismatches fail the entire refresh to preserve last-known-good data.
+        """
+        if not self._token:
+            raise ProviderConfigurationError("FOOTBALL_DATA_TOKEN is not configured")
+
+        try:
+            response = self._client.get(
+                f"{self._base_url}/competitions/PL/matches",
+                headers={"X-Auth-Token": self._token},
+            )
+            response.raise_for_status()
+            return self._map_fixtures(response.json(), self._clock())
+        except httpx.HTTPStatusError as exc:
+            raise ProviderError(
+                "Could not retrieve fixtures from the data provider",
+                retry_after_seconds=_retry_after_seconds(
+                    exc.response.headers.get("Retry-After"), self._clock()
+                ),
+            ) from exc
+        except (httpx.HTTPError, ValueError, TypeError, KeyError, AttributeError) as exc:
+            raise ProviderError("Could not retrieve valid fixtures from the data provider") from exc
+
+    @staticmethod
+    def _map_fixtures(payload: Any, retrieved_at: datetime) -> FixturesResponse:
+        """
+        Translate one untrusted competition-match response into local contracts.
+
+        Args:
+            payload: Decoded JSON from the season-wide EPL matches endpoint.
+            retrieved_at: Injected UTC retrieval instant.
+
+        Returns:
+            Validated season data suitable for an atomic SQLite upsert.
+        """
+        if not isinstance(payload, dict) or payload.get("competition", {}).get("code") != "PL":
+            raise ValueError("Expected EPL competition")
+        rows = payload["matches"]
+        if not isinstance(rows, list) or not rows:
+            raise ValueError("No season identity available")
+        if payload["resultSet"]["count"] != len(rows):
+            raise ValueError("Incomplete match response")
+
+        season = rows[0]["season"]
+        matches = []
+        for row in rows:
+            if row["season"]["id"] != season["id"]:
+                raise ValueError("Mixed seasons")
+            matches.append(
+                Fixture(
+                    id=row["id"],
+                    matchday=row["matchday"],
+                    kickoff=row.get("utcDate"),
+                    status=row["status"],
+                    home=FixtureTeam(
+                        id=row["homeTeam"]["id"],
+                        name=row["homeTeam"]["name"],
+                        crest=row["homeTeam"].get("crest"),
+                    ),
+                    away=FixtureTeam(
+                        id=row["awayTeam"]["id"],
+                        name=row["awayTeam"]["name"],
+                        crest=row["awayTeam"].get("crest"),
+                    ),
+                    home_score=row["score"]["fullTime"].get("home"),
+                    away_score=row["score"]["fullTime"].get("away"),
+                )
+            )
+        if len({match.id for match in matches}) != len(matches):
+            raise ValueError("Duplicate match identifiers")
+        return FixturesResponse(
+            season_id=season["id"],
+            current_matchday=season["currentMatchday"],
+            matches=tuple(matches),
+            retrieved_at=retrieved_at,
+        )
+
     @staticmethod
     def _map_standings(payload: Any, retrieved_at: datetime) -> StandingsResponse:
         """
@@ -227,6 +321,9 @@ class FootballDataAdapter:
                     position=row["position"],
                     team_id=team["id"],
                     team_name=team["name"],
+                    team_crest=FixtureTeam(
+                        id=team["id"], name=team["name"], crest=team.get("crest")
+                    ).crest,
                     played=row["playedGames"],
                     won=row["won"],
                     drawn=row["draw"],

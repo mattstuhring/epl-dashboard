@@ -1,6 +1,6 @@
 # EPL Ambient Dashboard backend
 
-The backend provides the dashboard's FastAPI API and isolates football-data.org v4 behind the `FootballProvider` protocol and `FootballDataAdapter`. A single lifespan-managed worker refreshes standings into SQLite; `GET /api/standings` reads that local state and never calls the provider. This keeps browser and kiosk polling independent of provider request usage. The standings quiet-period interval is 12 hours by default. Fixture/match refresh and activity-aware intervals are later work.
+The backend provides the dashboard's FastAPI API and isolates football-data.org v4 behind the `FootballProvider` protocol and `FootballDataAdapter`. A single lifespan-managed worker refreshes standings and fixtures into separate SQLite datasets; `GET /api/standings` reads that local state and never calls the provider. This keeps browser and kiosk polling independent of provider request usage. The standings quiet-period interval is 12 hours by default. Fixtures include scores, statuses, crests, and independently scheduled refresh state.
 
 The detailed requirements and Codex instructions are maintained locally under the repository's root `docs/` and `AGENTS.md`; they are intentionally excluded from Git. This README stays with the source and covers routine setup, checks, and running the backend.
 
@@ -50,6 +50,22 @@ cd ../backend
 ```
 
 Open `http://127.0.0.1:8000`. FastAPI serves `frontend/dist` at `/` and its bundled assets, while `/api/*` remains handled by the API. Missing assets still return 404; browser navigation paths use the SPA fallback. This uses FastAPI's `app.frontend()` API, so the declared FastAPI minimum is 0.138. The build output is ignored by Git and is not required to run backend tests or the API by itself. This validates local same-process serving; it does not yet configure startup on the Raspberry Pi.
+
+## Fixtures and matchweeks
+
+`GET /api/fixtures` returns local persisted data for the provider-selected current matchweek and the following numbered matchweek. Matchweek 38 has no following round. Browser reads never contact the football provider. One worker owns both standings and fixture schedules, sleeping until the earliest due attempt.
+
+The adapter retrieves the current season from `/v4/competitions/PL/matches` in one request. It validates season identity, reported match count and unique match IDs before committing a complete season snapshot. Corrections and rescheduled kickoffs replace the same season snapshot without duplicates; previous seasons remain stored. A response that drops previously known match IDs in the same season is rejected as incomplete. A response without season identity (including an empty list) preserves existing data and reports a refresh error.
+
+Fixture refresh settings are optional environment variables:
+
+- `FIXTURES_REFRESH_INTERVAL_SECONDS`: quiet-period delay, default `21600` (6 hours).
+- `FIXTURES_ACTIVE_INTERVAL_SECONDS`: active matchweek delay, default `1800` (30 minutes), including matches reported in play.
+- `FIXTURES_FAILURE_RETRY_SECONDS`: failure retry delay, default `900` (15 minutes); a longer provider `Retry-After` takes precedence.
+
+The initial activity boundary is the first through last dated fixture day of the provider-selected current round, in `America/Los_Angeles`. Postponed/cancelled games do not extend that window. A quiet-period wait is shortened at the known start of activity. Reported in-play games also keep the active cadence. These calendar-day boundaries are an implementation default; no separate 15-minute in-play cadence is used. Scores reflect the latest provider response and are not guaranteed real-time; account-specific provider delays and fixture access still require a live check.
+
+No data reset is needed when deploying this feature. Fixture tables are created alongside existing standings tables at startup. Existing standings snapshots without crests remain readable and acquire logos after their next successful refresh. Restart the backend after changing environment settings.
 
 ## Raspberry Pi 5 deployment
 

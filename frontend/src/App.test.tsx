@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { StandingsResponse, StandingsStateResponse } from './types'
@@ -182,4 +182,42 @@ describe('standings dashboard', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Backend connection failed.')
   })
+})
+
+
+it('provides rotation controls and pauses when a tab is selected', async () => {
+  mockState()
+  render(<App />)
+  fireEvent.click(screen.getByRole('switch', { name: 'Auto-rotate' }))
+  expect(screen.getByRole('switch', { name: 'Auto-rotate' })).toHaveAttribute('aria-checked', 'true')
+  fireEvent.click(screen.getByRole('button', { name: 'Matchweeks' }))
+  expect(screen.getByRole('switch', { name: 'Auto-rotate' })).toHaveAttribute('aria-checked', 'false')
+  expect(screen.getByRole('heading', { name: 'Matchweeks', level: 1 })).toBeInTheDocument()
+  expect(window.localStorage.getItem('epl.rotationEnabled')).toBe('false')
+  const favoritePicker = await screen.findByRole('combobox', { name: 'Favorite club' })
+  fireEvent.change(favoritePicker, { target: { value: '57' } })
+  expect(window.localStorage.getItem('epl.favoriteTeamId')).toBe('57')
+})
+
+
+it('shows all twenty ranks in two panels with shared controls and a favorite in the lower half', async () => {
+  const rows = Array.from({ length: 20 }, (_, index) => ({
+    ...standings.rows[0], position: index + 1, team_id: 1000 + index,
+    team_name: `Club ${index + 1}`,
+  })).reverse()
+  mockState(stateResponse({ ...standings, rows }, 'fresh'))
+  render(<App />)
+
+  const top = await screen.findByRole('table', { name: 'Top' })
+  const bottom = screen.getByRole('table', { name: 'Bottom' })
+  expect(within(top).getAllByRole('row')).toHaveLength(11)
+  expect(within(bottom).getAllByRole('row')).toHaveLength(11)
+  expect(within(top).getAllByRole('rowheader').map(cell => cell.textContent?.trim())).toEqual(
+    Array.from({ length: 10 }, (_, i) => `CL Club ${i + 1}`),
+  )
+  expect(within(bottom).getByRole('row', { name: /Club 20/ })).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('combobox', { name: 'Favorite club' }), { target: { value: '1014' } })
+  expect(within(bottom).getByRole('row', { name: /Club 15/ })).toHaveClass('favorite-row')
+  expect(screen.getAllByRole('combobox', { name: 'Favorite club' })).toHaveLength(1)
+  expect(screen.getAllByRole('group', { name: 'Standings data freshness' })).toHaveLength(1)
 })

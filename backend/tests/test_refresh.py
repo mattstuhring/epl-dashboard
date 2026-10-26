@@ -20,7 +20,7 @@ from config import Settings
 from main import create_app
 from models import StandingsResponse
 from providers import FootballDataAdapter, ProviderError
-from refresh import StandingsRefreshCoordinator, StandingsRefreshWorker
+from refresh import RefreshWorker, StandingsRefreshCoordinator
 from service import StandingsService
 from storage import SQLiteStandingsRepository
 
@@ -314,7 +314,7 @@ def test_background_worker_performs_initial_refresh(tmp_path: Path) -> None:
     provider = SequenceProvider(sample_standings())
     repository = SQLiteStandingsRepository(tmp_path / "dashboard.sqlite3")
     coordinator = make_coordinator(provider, repository, FakeClock())
-    worker = StandingsRefreshWorker(coordinator)
+    worker = RefreshWorker(coordinator)
     deadline = monotonic() + 2
 
     worker.start()

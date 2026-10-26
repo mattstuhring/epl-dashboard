@@ -12,13 +12,15 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from threading import Event, Lock, Thread
+from zoneinfo import ZoneInfo
 
-from models import StandingsStateResponse
+from models import FixturesResponse, FixturesStateResponse, StandingsStateResponse
 from providers import ProviderError
-from service import StandingsService
-from storage import SQLiteStandingsRepository
+from service import FixturesService, StandingsService
+from storage import SQLiteFixturesRepository, SQLiteStandingsRepository
 
 logger = logging.getLogger(__name__)
+SAFE_FIXTURES_ERROR = "The latest fixtures refresh failed."
 SAFE_REFRESH_ERROR = "The latest standings refresh failed."
 
 
@@ -171,18 +173,200 @@ class StandingsRefreshCoordinator:
         return now.astimezone(UTC)
 
 
-class StandingsRefreshWorker:
+class FixturesRefreshCoordinator:
     """
-    Run the standings coordinator on one low-overhead background thread.
+    Own refresh timing and freshness state for the EPL fixtures dataset.
+
+    The service is process-local and designed for one backend worker process,
+    matching the project's single-device deployment. SQLite carries successful
+    data and scheduled times across restarts; the lock prevents overlap within
+    the running process.
     """
 
-    def __init__(self, coordinator: StandingsRefreshCoordinator) -> None:
+    def __init__(
+        self,
+        service: FixturesService,
+        repository: SQLiteFixturesRepository,
+        *,
+        refresh_interval: timedelta,
+        failure_retry_interval: timedelta,
+        active_interval: timedelta = timedelta(minutes=30),
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         """
-        Create a worker that owns no resources beyond its stop event/thread.
+        Configure a single-provider fixtures refresh coordinator.
+
+        Args:
+            service: Application use case for retrieving normalized fixtures.
+            repository: SQLite storage for season snapshots and refresh state.
+            refresh_interval: Delay after success before the next quiet-period
+                refresh is due.
+            failure_retry_interval: Minimum delay after a failed attempt. A
+                provider Retry-After value extends this delay when necessary.
+            clock: Optional zero-argument UTC clock for deterministic tests.
+        """
+        self._service = service
+        self._repository = repository
+        self._active_interval = active_interval
+        self._refresh_interval = refresh_interval
+        self._failure_retry_interval = failure_retry_interval
+        self._clock = clock if clock is not None else lambda: datetime.now(UTC)
+        self._refresh_lock = Lock()
+        self._refreshing = False
+
+    def get_state(self) -> FixturesStateResponse:
+        """
+        Return the latest local data and a freshness state without provider I/O.
+
+        Returns:
+            Last successful fixtures and refresh metadata suitable for the API.
+        """
+        now = self._now()
+        fixtures, last_attempt_at, next_refresh_at, refresh_error = self._repository.read_state()
+
+        if self._refreshing:
+            status = "refreshing"
+        elif fixtures is None and refresh_error:
+            status = "error"
+        elif fixtures is None:
+            status = "pending"
+        elif refresh_error or (next_refresh_at is not None and now >= next_refresh_at):
+            status = "stale"
+        else:
+            status = "fresh"
+
+        return FixturesStateResponse(
+            fixtures=(
+                fixtures.model_copy(
+                    update={
+                        "matches": tuple(
+                            match
+                            for match in fixtures.matches
+                            if match.matchday
+                            in {fixtures.current_matchday, fixtures.current_matchday + 1}
+                        )
+                    }
+                )
+                if fixtures
+                else None
+            ),
+            refresh_status=status,
+            last_attempt_at=last_attempt_at,
+            last_success_at=fixtures.retrieved_at if fixtures else None,
+            next_refresh_at=next_refresh_at,
+            refresh_error=refresh_error,
+        )
+
+    def refresh_if_due(self) -> bool:
+        """
+        Retrieve fixtures only when the persisted backend schedule is due.
+
+        Returns:
+            True when this call performed a provider attempt; False when another
+            refresh owns the lock or the next scheduled time has not arrived.
+        """
+        if not self._refresh_lock.acquire(blocking=False):
+            return False
+
+        try:
+            now = self._now()
+            _, _, next_refresh_at, _ = self._repository.read_state()
+            if next_refresh_at is not None and now < next_refresh_at:
+                return False
+
+            try:
+                self._refreshing = True
+                self._repository.record_attempt(
+                    now,
+                    now + self._failure_retry_interval,
+                )
+
+                try:
+                    fixtures = self._service.get_fixtures()
+                    previous, _, _, _ = self._repository.read_state()
+                    if previous and previous.season_id == fixtures.season_id:
+                        missing_ids = {match.id for match in previous.matches} - {
+                            match.id for match in fixtures.matches
+                        }
+                        if missing_ids:
+                            raise ProviderError("Incomplete fixture response")
+                except ProviderError as exc:
+                    failed_at = self._now()
+                    retry_after = timedelta(seconds=exc.retry_after_seconds or 0)
+                    next_attempt = max(
+                        failed_at + self._failure_retry_interval,
+                        failed_at + retry_after,
+                    )
+                    self._repository.record_failure(now, next_attempt, SAFE_FIXTURES_ERROR)
+                    logger.warning("Fixtures refresh failed (%s)", type(exc).__name__)
+                except Exception as exc:
+                    failed_at = self._now()
+                    self._repository.record_failure(
+                        now,
+                        failed_at + self._failure_retry_interval,
+                        SAFE_FIXTURES_ERROR,
+                    )
+                    logger.error("Fixtures refresh failed (%s)", type(exc).__name__)
+                else:
+                    completed_at = self._now()
+                    self._repository.record_success(
+                        fixtures,
+                        now,
+                        next_fixture_refresh(
+                            fixtures, completed_at, self._refresh_interval, self._active_interval
+                        ),
+                    )
+            finally:
+                self._refreshing = False
+
+            return True
+        finally:
+            self._refresh_lock.release()
+
+    def seconds_until_next_attempt(self) -> float:
+        """
+        Return a bounded wait duration for the scheduler worker.
+        """
+        _, _, next_refresh_at, _ = self._repository.read_state()
+
+        if next_refresh_at is None:
+            return 0
+
+        return max(0.0, (next_refresh_at - self._now()).total_seconds())
+
+    def _now(self) -> datetime:
+        """
+        Read the injected clock and require an aware instant.
+        """
+        now = self._clock()
+
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise ValueError("Refresh clock must return a timezone-aware datetime")
+
+        return now.astimezone(UTC)
+
+
+class RefreshWorker:
+    """
+    Run both dataset schedules sequentially on one background thread.
+    """
+
+    def __init__(
+        self,
+        coordinator: StandingsRefreshCoordinator,
+        fixtures: FixturesRefreshCoordinator | None = None,
+    ) -> None:
+        """
+        Create the worker that sleeps until the earliest dataset is due.
+
+        Args:
+            coordinator: Standings schedule, retained as the first dataset.
+            fixtures: Optional independent fixtures schedule on this same thread.
         """
         self._coordinator = coordinator
+        self._fixtures = fixtures
         self._stop_event = Event()
-        self._thread = Thread(target=self._run, name="standings-refresh", daemon=True)
+        self._thread = Thread(target=self._run, name="football-refresh", daemon=True)
 
     def start(self) -> None:
         """
@@ -205,9 +389,54 @@ class StandingsRefreshWorker:
             try:
                 self._coordinator.refresh_if_due()
                 wait_seconds = self._coordinator.seconds_until_next_attempt()
+                if self._fixtures is not None:
+                    self._fixtures.refresh_if_due()
+                    wait_seconds = min(wait_seconds, self._fixtures.seconds_until_next_attempt())
             except Exception as exc:
-                logger.error("Standings refresh worker failed (%s)", type(exc).__name__)
+                logger.error("Football refresh worker failed (%s)", type(exc).__name__)
                 self._stop_event.wait(30)
                 continue
 
             self._stop_event.wait(wait_seconds if wait_seconds > 0 else 1)
+
+
+def next_fixture_refresh(
+    data: FixturesResponse, now: datetime, quiet: timedelta, active: timedelta
+) -> datetime:
+    """
+    Schedule activity polling across the displayed round's local calendar days.
+
+    Args:
+        data: Full season with provider-selected current matchday.
+        now: UTC completion instant.
+        quiet: Configured delay outside activity.
+        active: Configured delay during activity, including reported in-play games.
+
+    Returns:
+        Next UTC attempt, capped at the next activity boundary to avoid sleeping
+        through kickoff. Postponed and cancelled games do not extend the window.
+
+    Notes:
+        Calendar-day boundaries use Los Angeles time, matching the dashboard.
+        Unknown kickoff times cannot establish an activity window.
+    """
+    local_zone = ZoneInfo("America/Los_Angeles")
+    if any(match.status in {"IN_PLAY", "PAUSED", "LIVE"} for match in data.matches):
+        return now + active
+
+    relevant = [
+        match.kickoff
+        for match in data.matches
+        if match.matchday == data.current_matchday
+        and match.kickoff is not None
+        and match.status not in {"POSTPONED", "CANCELLED"}
+    ]
+    if not relevant:
+        return now + quiet
+    start = min(relevant).astimezone(local_zone).replace(hour=0, minute=0, second=0, microsecond=0)
+    end = max(relevant).astimezone(local_zone).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ) + timedelta(days=1)
+    if start <= now < end:
+        return min(now + active, end.astimezone(UTC))
+    return min(now + quiet, start.astimezone(UTC)) if now < start else now + quiet

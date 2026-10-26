@@ -1,5 +1,5 @@
 """
-Define normalized, provider-independent standings data contracts.
+Define normalized standings, fixture and refresh contracts for the dashboard.
 
 These models are the boundary between the football-data.org adapter, the
 application service, and the HTTP API. They validate untrusted provider values
@@ -8,7 +8,7 @@ Field descriptions are published through Pydantic's JSON Schema and FastAPI's
 OpenAPI document, making each value's meaning visible to API consumers.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -24,6 +24,7 @@ class StandingsRow(BaseModel):
     position: int = Field(description="Current league position, starting at 1.")
     team_id: int = Field(description="Stable football-data.org team identifier.")
     team_name: str = Field(description="Display name of the club.")
+    team_crest: str | None = Field(default=None, description="Optional club crest URL.")
     played: int = Field(description="League matches played in this season.")
     won: int = Field(description="League matches won in this season.")
     drawn: int = Field(description="League matches drawn in this season.")
@@ -107,3 +108,111 @@ class StandingsStateResponse(BaseModel):
     refresh_error: str | None = Field(
         description="Safe summary of the latest failure; never includes provider response details."
     )
+
+
+class FixtureTeam(BaseModel):
+    """
+    Identify a club and its optional display crest in a fixture.
+    """
+
+    id: int = Field(gt=0, description="Stable provider team identifier.")
+    name: str = Field(min_length=1, description="Club display name.")
+    crest: str | None = Field(default=None, description="Optional HTTPS club crest URL.")
+
+    @field_validator("crest")
+    @classmethod
+    def safe_crest(cls, value: str | None) -> str | None:
+        """
+        Omit non-HTTPS images so browser requests cannot use unsafe schemes.
+
+        Args:
+            value: Optional upstream image URL.
+
+        Returns:
+            HTTPS URL or null, allowing a text fallback.
+        """
+        return value if value and value.startswith("https://") else None
+
+
+class Fixture(BaseModel):
+    """
+    Describe one EPL match throughout its scheduled, in-play and final states.
+    """
+
+    id: int = Field(gt=0, description="Stable match identifier used for corrections.")
+    matchday: int = Field(ge=1, le=38, description="Provider-assigned EPL matchweek.")
+    kickoff: datetime | None = Field(description="UTC kickoff, or null when unknown.")
+    status: str = Field(min_length=1, description="Provider status; unknown states remain visible.")
+    home: FixtureTeam = Field(description="Home club.")
+    away: FixtureTeam = Field(description="Away club.")
+    home_score: int | None = Field(
+        ge=0, description="Reported home score, not zero when unavailable."
+    )
+    away_score: int | None = Field(
+        ge=0, description="Reported away score, not zero when unavailable."
+    )
+
+    @field_validator("kickoff")
+    @classmethod
+    def aware_kickoff(cls, value: datetime | None) -> datetime | None:
+        """
+        Require explicit timezone information on supplied kickoff instants.
+
+        Args:
+            value: Parsed kickoff timestamp, if known.
+
+        Returns:
+            UTC-normalized timestamp, or null.
+        """
+        if value is not None:
+            if value.tzinfo is None:
+                raise ValueError("kickoff must be timezone-aware")
+            return value.astimezone(UTC)
+        return None
+
+
+class FixturesResponse(BaseModel):
+    """
+    Store one complete season's fixture state for atomic correction and retention.
+
+    The API exposes only the selected pair of weeks; retaining the season locally
+    allows activity scheduling without making extra per-week provider requests.
+    """
+
+    season_id: int = Field(gt=0, description="Provider season identifier.")
+    current_matchday: int = Field(ge=1, le=38, description="Provider-selected current matchweek.")
+    matches: tuple[Fixture, ...] = Field(description="Unique validated matches in this season.")
+    retrieved_at: datetime = Field(description="UTC successful retrieval instant.")
+
+    @field_validator("retrieved_at")
+    @classmethod
+    def aware_retrieval(cls, value: datetime) -> datetime:
+        """
+        Require a UTC retrieval timestamp for stored fixture freshness.
+
+        Args:
+            value: Parsed retrieval instant.
+
+        Returns:
+            Validated UTC timestamp.
+        """
+        if value.tzinfo is None or value.utcoffset() != timedelta(0):
+            raise ValueError("retrieved_at must be UTC")
+        return value
+
+
+class FixturesStateResponse(BaseModel):
+    """
+    Publish current and next numbered weeks with independent refresh metadata.
+    """
+
+    fixtures: FixturesResponse | None = Field(
+        description="Selected weeks, null before first success."
+    )
+    refresh_status: Literal["pending", "refreshing", "fresh", "stale", "error"] = Field(
+        description="Fixture refresh status."
+    )
+    last_attempt_at: datetime | None = Field(description="UTC latest attempt start.")
+    last_success_at: datetime | None = Field(description="UTC latest successful refresh.")
+    next_refresh_at: datetime | None = Field(description="UTC next scheduled attempt.")
+    refresh_error: str | None = Field(description="Sanitized latest fixture failure.")

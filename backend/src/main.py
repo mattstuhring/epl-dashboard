@@ -21,9 +21,9 @@ from fastapi import FastAPI
 from api import router
 from config import Settings, get_settings
 from providers import FootballDataAdapter, FootballProvider
-from refresh import StandingsRefreshCoordinator, StandingsRefreshWorker
-from service import StandingsService
-from storage import SQLiteStandingsRepository
+from refresh import FixturesRefreshCoordinator, RefreshWorker, StandingsRefreshCoordinator
+from service import FixturesService, StandingsService
+from storage import SQLiteFixturesRepository, SQLiteStandingsRepository
 
 
 def create_app(
@@ -107,7 +107,20 @@ def create_app(
             ),
             clock=clock,
         )
-        worker = StandingsRefreshWorker(coordinator)
+        # Fixtures use independent persisted due times on the same worker.
+        fixtures_repository = SQLiteFixturesRepository(path)
+        fixtures_coordinator = FixturesRefreshCoordinator(
+            FixturesService(provider),
+            fixtures_repository,
+            refresh_interval=timedelta(seconds=resolved_settings.fixtures_refresh_interval_seconds),
+            active_interval=timedelta(seconds=resolved_settings.fixtures_active_interval_seconds),
+            failure_retry_interval=timedelta(
+                seconds=resolved_settings.fixtures_failure_retry_seconds
+            ),
+            clock=clock,
+        )
+        application.state.fixtures_refresh = fixtures_coordinator
+        worker = RefreshWorker(coordinator, fixtures_coordinator)
 
         # Step 4: Make the coordinator available to API routes for local reads.
         application.state.standings_refresh = coordinator
@@ -128,6 +141,7 @@ def create_app(
             if callable(close_provider):
                 close_provider()
             repository.close()
+            fixtures_repository.close()
 
     application = FastAPI(title="EPL Dashboard API", version="0.2.0", lifespan=lifespan)
     application.include_router(router, prefix="/api")

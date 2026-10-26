@@ -1,5 +1,5 @@
 """
-Implement the application use case for retrieving EPL standings.
+Implement provider-independent use cases for EPL standings and fixtures.
 
 The service sits between the refresh coordinator and a `FootballProvider`, so
 the rest of the application depends on application-owned models rather than
@@ -8,7 +8,7 @@ and the SQLite repository owns durable state. The provider is injected to keep
 this use case deterministic in tests and replaceable without changing API code.
 """
 
-from models import StandingsResponse
+from models import FixturesResponse, StandingsResponse
 from providers import FootballProvider
 
 
@@ -43,3 +43,27 @@ class StandingsService:
             behavior; the refresh coordinator decides when to call it.
         """
         return self._provider.get_standings()
+
+
+class FixturesService:
+    """
+    Retrieve fixture data through the same provider boundary as standings.
+    """
+
+    def __init__(self, provider: FootballProvider) -> None:
+        """
+        Inject the provider without taking ownership of its HTTP resources.
+
+        Args:
+            provider: Application provider shared with the standings service.
+        """
+        self._provider = provider
+
+    def get_fixtures(self) -> FixturesResponse:
+        """
+        Retrieve normalized season matches for scheduled persistence.
+
+        Returns:
+            Validated fixtures; provider failures propagate to the coordinator.
+        """
+        return self._provider.get_fixtures()

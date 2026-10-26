@@ -29,6 +29,9 @@ class Settings(BaseSettings):
         database_path: Local SQLite database path for durable refresh state.
         standings_refresh_interval_seconds: Quiet-period interval for standings.
         standings_failure_retry_seconds: Minimum wait before retrying a failed standings refresh; provider Retry-After can extend this wait.
+        fixtures_refresh_interval_seconds: Fixture polling delay during quiet periods.
+        fixtures_active_interval_seconds: Fixture polling delay during active matchweeks.
+        fixtures_failure_retry_seconds: Minimum fixture failure retry delay.
     """
 
     # The token is optional locally; the provider adapter reports its absence on use.
@@ -76,6 +79,18 @@ class Settings(BaseSettings):
         default=900,
         gt=0,
         description="Minimum delay before another standings attempt after a refresh failure.",
+    )
+
+    fixtures_refresh_interval_seconds: int = Field(
+        default=21_600, gt=0, description="Fixture quiet-period refresh seconds."
+    )
+    fixtures_active_interval_seconds: int = Field(
+        default=1_800, gt=0, description="Fixture refresh seconds during matchweek activity."
+    )
+    fixtures_failure_retry_seconds: int = Field(
+        default=900,
+        gt=0,
+        description="Minimum seconds after fixture failure; Retry-After can extend this.",
     )
 
     # Read one local development file; deployed environments use variables.

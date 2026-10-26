@@ -1,5 +1,5 @@
 """
-Persist normalized standings and refresh metadata in the local SQLite database.
+Persist normalized dashboard datasets and refresh metadata in the local SQLite database.
 
 This module gives the refresh service an atomic, provider-independent storage
 boundary. Successful standings are upserted by season identifier so a new
@@ -13,26 +13,32 @@ from datetime import UTC, datetime
 from pathlib import Path
 from threading import RLock
 
-from models import StandingsResponse
+from models import FixturesResponse, StandingsResponse
 
 
-class SQLiteStandingsRepository:
+class SQLiteDatasetRepository[Data: StandingsResponse | FixturesResponse]:
     """
-    Store the latest successful standings for each EPL season and refresh state.
+    Store the latest successful snapshot for each season of a typed dataset.
 
     A single connection is protected by a lock because the background worker
     and FastAPI request threads share this repository. Each write uses a
     transaction; callers own this instance and should close it at app shutdown.
     """
 
-    def __init__(self, database_path: str | Path) -> None:
+    def __init__(self, database_path: str | Path, model: type[Data], namespace: str) -> None:
         """
         Open the configured SQLite file and ensure the minimal schema exists.
 
         Args:
             database_path: Local database file path. Parent directories are
                 created as needed; `:memory:` is supported for isolated tests.
+            model: Validated model used to decode persisted snapshots.
+            namespace: Internal standings or fixtures table prefix, never user input.
         """
+        self._model = model
+        if namespace not in {"standings", "fixtures"}:
+            raise ValueError("Unknown dataset")
+        self._namespace = namespace
         self._lock = RLock()
         path_text = str(database_path)
 
@@ -49,8 +55,8 @@ class SQLiteStandingsRepository:
         """
         with self._lock, self._connection:
             self._connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS standings_by_season (
+                f"""
+                CREATE TABLE IF NOT EXISTS {self._namespace}_by_season (
                     season_id INTEGER PRIMARY KEY,
                     retrieved_at TEXT NOT NULL,
                     payload_json TEXT NOT NULL
@@ -58,8 +64,8 @@ class SQLiteStandingsRepository:
                 """
             )
             self._connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS standings_refresh_control (
+                f"""
+                CREATE TABLE IF NOT EXISTS {self._namespace}_refresh_control (
                     singleton_id INTEGER PRIMARY KEY CHECK (singleton_id = 1),
                     last_attempt_at TEXT,
                     next_refresh_at TEXT,
@@ -68,15 +74,15 @@ class SQLiteStandingsRepository:
                 """
             )
             self._connection.execute(
-                """
-                INSERT OR IGNORE INTO standings_refresh_control (singleton_id)
+                f"""
+                INSERT OR IGNORE INTO {self._namespace}_refresh_control (singleton_id)
                 VALUES (1)
                 """
             )
 
     def read_state(
         self,
-    ) -> tuple[StandingsResponse | None, datetime | None, datetime | None, str | None]:
+    ) -> tuple[Data | None, datetime | None, datetime | None, str | None]:
         """
         Return the latest successful table and persisted refresh metadata.
 
@@ -86,22 +92,22 @@ class SQLiteStandingsRepository:
         """
         with self._lock:
             row = self._connection.execute(
-                """
+                f"""
                 SELECT payload_json
-                FROM standings_by_season
+                FROM {self._namespace}_by_season
                 ORDER BY retrieved_at DESC
                 LIMIT 1
                 """
             ).fetchone()
             control = self._connection.execute(
-                """
+                f"""
                 SELECT last_attempt_at, next_refresh_at, refresh_error
-                FROM standings_refresh_control
+                FROM {self._namespace}_refresh_control
                 WHERE singleton_id = 1
                 """
             ).fetchone()
 
-        standings = StandingsResponse.model_validate_json(row["payload_json"]) if row else None
+        standings = self._model.model_validate_json(row["payload_json"]) if row else None
         last_attempt_at = _parse_datetime(control["last_attempt_at"])
         next_refresh_at = _parse_datetime(control["next_refresh_at"])
         return standings, last_attempt_at, next_refresh_at, control["refresh_error"]
@@ -116,8 +122,8 @@ class SQLiteStandingsRepository:
         """
         with self._lock, self._connection:
             self._connection.execute(
-                """
-                UPDATE standings_refresh_control
+                f"""
+                UPDATE {self._namespace}_refresh_control
                 SET last_attempt_at = ?, next_refresh_at = ?, refresh_error = NULL
                 WHERE singleton_id = 1
                 """,
@@ -126,7 +132,7 @@ class SQLiteStandingsRepository:
 
     def record_success(
         self,
-        standings: StandingsResponse,
+        standings: Data,
         attempted_at: datetime,
         next_refresh_at: datetime,
     ) -> None:
@@ -140,8 +146,8 @@ class SQLiteStandingsRepository:
         """
         with self._lock, self._connection:
             self._connection.execute(
-                """
-                INSERT INTO standings_by_season (season_id, retrieved_at, payload_json)
+                f"""
+                INSERT INTO {self._namespace}_by_season (season_id, retrieved_at, payload_json)
                 VALUES (?, ?, ?)
                 ON CONFLICT(season_id) DO UPDATE SET
                     retrieved_at = excluded.retrieved_at,
@@ -154,8 +160,8 @@ class SQLiteStandingsRepository:
                 ),
             )
             self._connection.execute(
-                """
-                UPDATE standings_refresh_control
+                f"""
+                UPDATE {self._namespace}_refresh_control
                 SET last_attempt_at = ?, next_refresh_at = ?, refresh_error = NULL
                 WHERE singleton_id = 1
                 """,
@@ -178,8 +184,8 @@ class SQLiteStandingsRepository:
         """
         with self._lock, self._connection:
             self._connection.execute(
-                """
-                UPDATE standings_refresh_control
+                f"""
+                UPDATE {self._namespace}_refresh_control
                 SET last_attempt_at = ?, next_refresh_at = ?, refresh_error = ?
                 WHERE singleton_id = 1
                 """,
@@ -212,3 +218,33 @@ def _parse_datetime(value: str | None) -> datetime | None:
     Parse a stored ISO timestamp into a timezone-aware datetime.
     """
     return datetime.fromisoformat(value) if value else None
+
+
+class SQLiteStandingsRepository(SQLiteDatasetRepository[StandingsResponse]):
+    """
+    Store standings using the shared dataset transaction and retention rules.
+    """
+
+    def __init__(self, database_path: str | Path) -> None:
+        """
+        Open standings tables, preserving compatibility with existing Pi data.
+
+        Args:
+            database_path: SQLite file or :memory: for tests.
+        """
+        super().__init__(database_path, StandingsResponse, "standings")
+
+
+class SQLiteFixturesRepository(SQLiteDatasetRepository[FixturesResponse]):
+    """
+    Upsert complete fixture seasons without overwriting standings tables.
+    """
+
+    def __init__(self, database_path: str | Path) -> None:
+        """
+        Open fixture storage alongside the existing standings dataset.
+
+        Args:
+            database_path: SQLite file or :memory: for tests.
+        """
+        super().__init__(database_path, FixturesResponse, "fixtures")

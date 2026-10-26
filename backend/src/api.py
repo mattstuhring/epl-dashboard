@@ -12,7 +12,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
-from models import StandingsStateResponse
+from models import FixturesStateResponse, StandingsStateResponse
 from refresh import StandingsRefreshCoordinator
 
 router = APIRouter()
@@ -50,3 +50,17 @@ def get_standings(
         failed.
     """
     return coordinator.get_state()
+
+
+@router.get("/fixtures", response_model=FixturesStateResponse)
+def get_fixtures(request: Request) -> FixturesStateResponse:
+    """
+    Read the current and next numbered matchweeks without provider requests.
+
+    Args:
+        request: Request containing the lifespan-owned fixtures coordinator.
+
+    Returns:
+        Last successful fixture weeks and independent refresh metadata.
+    """
+    return request.app.state.fixtures_refresh.get_state()
