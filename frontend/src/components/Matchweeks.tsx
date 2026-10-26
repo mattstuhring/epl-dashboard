@@ -121,7 +121,7 @@ function FixtureRow({ match, favoriteTeamId }: { match: Fixture; favoriteTeamId:
           <TeamCrest name={match.home.name} url={match.home.crest} />
           <span>{match.home.name}</span>
         </div>
-        <strong className="fixture-score">{centerLabel}</strong>
+        <strong className={`fixture-score ${showScore ? '' : 'kickoff-time'}`}>{centerLabel}</strong>
         <div className="fixture-club fixture-away">
           <TeamCrest name={match.away.name} url={match.away.crest} />
           <span>{match.away.name}</span>

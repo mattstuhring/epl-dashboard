@@ -83,6 +83,8 @@ Favorite club is a global browser preference beside the carousel controls, avail
 
 The kiosk target is landscape **1920×1080 at 100% Chromium zoom**. The dashboard uses the available width with modest margins instead of a fixed 1180px column. On landscape windows at least 1200px wide and 800px high, data text and crests scale with width while row spacing responds to available height. Headers and controls remain compact; the page does not use CSS zoom or hide overflowing rows.
 
-At 1080p, data text is 19px and crests about 33px, with both ten-row panels and freshness details visible. Smaller windows keep the existing stacked/scrolling layout as needed. Display resolution, desktop scaling, browser zoom and unusually long data/error messages can affect the fit; local browser verification is separate from testing the physical Pi display.
+At 1080p, club names/statistics are 17px and crests about 28px, with both ten-row panels and freshness details visible. Smaller windows keep the existing stacked/scrolling layout as needed. Display resolution, desktop scaling, browser zoom and unusually long data/error messages can affect the fit; local browser verification is separate from testing the physical Pi display.
 
 The page title, small clickable view indicators, rotation settings and global favorite preference share one row on wide screens. The current indicator is a green pill; inactive views use dots with hover labels. Controls wrap on narrower windows. Insight subtitles remain a future enhancement.
+
+The landscape presentation uses slightly wider side margins, inward-facing club/crest alignment around each matchup, and lighter score treatments. Kickoff times are quieter than reported scores.

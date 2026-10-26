@@ -3,7 +3,7 @@
 }
 
 .dashboard-shell {
-  width: calc(100% - clamp(32px, 4vw, 80px));
+  width: calc(100% - clamp(48px, 6.5vw, 160px));
   margin: 0 auto;
 }
 
@@ -725,8 +725,8 @@ tbody .favorite-row {
    Keep the normal stacked layout for smaller browser windows. */
 @media (min-width: 1200px) and (min-height: 800px) {
   .dashboard-shell {
-    --data-font-size: clamp(14px, 1vw, 19px);
-    --crest-size: clamp(26px, 1.7vw, 34px);
+    --data-font-size: clamp(14px, 0.9vw, 17px);
+    --crest-size: clamp(24px, 1.45vw, 28px);
   }
 
   .topbar {
@@ -795,4 +795,30 @@ tbody .favorite-row {
 
   .table-footer { padding: 10px 12px; font-size: 12px; }
   .page-footer { padding: 12px 2px 16px; font-size: 10px; }
+}
+
+
+/* Keep each matchup visually connected around its score. */
+@media (min-width: 1200px) and (min-height: 800px) {
+  .fixture-teams { gap: 16px; }
+  .fixture-club {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    text-align: right;
+    font-weight: 500;
+  }
+  .fixture-away {
+    flex-direction: row;
+    text-align: left;
+  }
+  .fixtures-mode .fixture-score {
+    background: #f7f8f4;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .fixtures-mode .fixture-score.kickoff-time {
+    background: transparent;
+    font-size: 16px;
+    font-weight: 500;
+  }
 }
