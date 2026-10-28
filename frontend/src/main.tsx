@@ -1,3 +1,6 @@
+/**
+ * Mount the dashboard once, with StrictMode checking effect cleanup during development.
+ */
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

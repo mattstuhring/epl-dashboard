@@ -151,3 +151,24 @@ def test_standings_service_delegates_to_provider() -> None:
 
     assert service.get_standings() == response
     assert provider.called
+
+
+@pytest.mark.parametrize("fault", ["competition", "duplicate", "negative"])
+def test_adapter_rejects_invalid_standings_identity_and_totals(fault: str) -> None:
+    from copy import deepcopy
+
+    payload = deepcopy(SAMPLE)
+    if fault == "competition":
+        payload["competition"]["code"] = "PD"
+    elif fault == "duplicate":
+        payload["standings"][1]["table"] *= 2
+    else:
+        payload["standings"][1]["table"][0]["won"] = -1
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=payload)
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        adapter = FootballDataAdapter("test-token", client=client, clock=lambda: RETRIEVED_AT)
+        with pytest.raises(ProviderError):
+            adapter.get_standings()

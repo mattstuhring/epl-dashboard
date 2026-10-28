@@ -17,20 +17,23 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class StandingsRow(BaseModel):
     """
     One club's normalized row in the league-wide total standings table.
+
+    Stable identity and rank are validated before persistence. Points may be
+    negative after deductions; match and goal counts must be non-negative.
     """
 
     model_config = ConfigDict(frozen=True)
 
-    position: int = Field(description="Current league position, starting at 1.")
-    team_id: int = Field(description="Stable football-data.org team identifier.")
-    team_name: str = Field(description="Display name of the club.")
+    position: int = Field(ge=1, le=20, description="Current league position, starting at 1.")
+    team_id: int = Field(gt=0, description="Stable football-data.org team identifier.")
+    team_name: str = Field(min_length=1, description="Display name of the club.")
     team_crest: str | None = Field(default=None, description="Optional club crest URL.")
-    played: int = Field(description="League matches played in this season.")
-    won: int = Field(description="League matches won in this season.")
-    drawn: int = Field(description="League matches drawn in this season.")
-    lost: int = Field(description="League matches lost in this season.")
-    goals_for: int = Field(description="Goals scored in league matches this season.")
-    goals_against: int = Field(description="Goals conceded in league matches this season.")
+    played: int = Field(ge=0, description="League matches played in this season.")
+    won: int = Field(ge=0, description="League matches won in this season.")
+    drawn: int = Field(ge=0, description="League matches drawn in this season.")
+    lost: int = Field(ge=0, description="League matches lost in this season.")
+    goals_for: int = Field(ge=0, description="Goals scored in league matches this season.")
+    goals_against: int = Field(ge=0, description="Goals conceded in league matches this season.")
     goal_difference: int = Field(description="Goals for minus goals against.")
     points: int = Field(description="League points currently awarded to the club.")
 
@@ -49,7 +52,7 @@ class StandingsResponse(BaseModel):
     competition_id: int = Field(description="Stable identifier for the competition.")
     competition_code: str = Field(description="Short competition code; `PL` identifies the EPL.")
     competition_name: str = Field(description="Display name of the competition.")
-    season_id: int = Field(description="Stable identifier for the competition season.")
+    season_id: int = Field(gt=0, description="Stable identifier for the competition season.")
     season_start: date = Field(description="Season start date, without a time or timezone.")
     season_end: date = Field(description="Season end date, without a time or timezone.")
     current_matchday: int | None = Field(
@@ -113,6 +116,9 @@ class StandingsStateResponse(BaseModel):
 class FixtureTeam(BaseModel):
     """
     Identify a club and its optional display crest in a fixture.
+
+    The adapter validates each team at the provider boundary. Unsafe image
+    schemes are omitted so the frontend can use its decorative fallback.
     """
 
     id: int = Field(gt=0, description="Stable provider team identifier.")
@@ -137,6 +143,9 @@ class FixtureTeam(BaseModel):
 class Fixture(BaseModel):
     """
     Describe one EPL match throughout its scheduled, in-play and final states.
+
+    Match ID survives score corrections and rescheduling. Unknown kickoff and
+    score values remain null; zero is a genuine reported score.
     """
 
     id: int = Field(gt=0, description="Stable match identifier used for corrections.")
@@ -146,10 +155,10 @@ class Fixture(BaseModel):
     home: FixtureTeam = Field(description="Home club.")
     away: FixtureTeam = Field(description="Away club.")
     home_score: int | None = Field(
-        ge=0, description="Reported home score, not zero when unavailable."
+        ge=0, description="Reported home score; null means unavailable and zero is a valid score."
     )
     away_score: int | None = Field(
-        ge=0, description="Reported away score, not zero when unavailable."
+        ge=0, description="Reported away score; null means unavailable and zero is a valid score."
     )
 
     @field_validator("kickoff")
@@ -204,6 +213,9 @@ class FixturesResponse(BaseModel):
 class FixturesStateResponse(BaseModel):
     """
     Publish current and next numbered weeks with independent refresh metadata.
+
+    The coordinator selects display weeks from the stored full season. Failed
+    attempts keep that snapshot available alongside a sanitized failure status.
     """
 
     fixtures: FixturesResponse | None = Field(

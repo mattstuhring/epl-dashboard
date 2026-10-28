@@ -81,3 +81,20 @@ it('falls back safely when stored settings are invalid', () => {
   expect(result.current.isRotating).toBe(false)
   expect(result.current.intervalSeconds).toBe(60)
 })
+
+it('suspends rotation while the menu is open and resumes with a full interval', () => {
+  const { result, rerender } = renderHook(({ open }) => useDashboardNavigation(open), {
+    initialProps: { open: false },
+  })
+  act(() => result.current.toggleRotation())
+  act(() => vi.advanceTimersByTime(50_000))
+  rerender({ open: true })
+  act(() => vi.advanceTimersByTime(120_000))
+  expect(result.current.view).toBe('standings')
+  expect(result.current.isRotating).toBe(true)
+  rerender({ open: false })
+  act(() => vi.advanceTimersByTime(59_999))
+  expect(result.current.view).toBe('standings')
+  act(() => vi.advanceTimersByTime(1))
+  expect(result.current.view).toBe('fixtures')
+})

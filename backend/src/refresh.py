@@ -1,5 +1,5 @@
 """
-Coordinate scheduled standings refreshes independently of browser requests.
+Coordinate standings and fixture schedules using one shared match-day policy.
 
 The coordinator checks persisted due times, prevents overlapping work in the
 backend process, stores successful snapshots atomically, and records safe
@@ -7,6 +7,8 @@ failure state without discarding prior data. A small daemon worker wakes at
 the next scheduled attempt; API reads only inspect local SQLite state and never
 make provider requests.
 """
+
+from __future__ import annotations
 
 import logging
 from collections.abc import Callable
@@ -41,6 +43,8 @@ class StandingsRefreshCoordinator:
         *,
         refresh_interval: timedelta,
         failure_retry_interval: timedelta,
+        policy: MatchDayRefreshPolicy | None = None,
+        phase: timedelta = timedelta(0),
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         """
@@ -53,8 +57,12 @@ class StandingsRefreshCoordinator:
                 refresh is due.
             failure_retry_interval: Minimum delay after a failed attempt. A
                 provider Retry-After value extends this delay when necessary.
+            policy: Shared local match-day policy; absent for isolated fixed schedules.
+            phase: Offset within the shared active cadence, not another interval.
             clock: Optional zero-argument UTC clock for deterministic tests.
         """
+        self._policy = policy
+        self._phase = phase
         self._service = service
         self._repository = repository
         self._refresh_interval = refresh_interval
@@ -105,12 +113,15 @@ class StandingsRefreshCoordinator:
             return False
 
         try:
+            # Phase 1: Reconcile local activity before deciding whether I/O is due.
             now = self._now()
+            self._reconcile_schedule()
             _, _, next_refresh_at, _ = self._repository.read_state()
             if next_refresh_at is not None and now < next_refresh_at:
                 return False
 
             try:
+                # Phase 2: Persist the attempt before calling the provider.
                 self._refreshing = True
                 self._repository.record_attempt(
                     now,
@@ -137,11 +148,18 @@ class StandingsRefreshCoordinator:
                     )
                     logger.error("Standings refresh failed (%s)", type(exc).__name__)
                 else:
+                    # Phase 3: Commit validated data and the next deadline together.
                     completed_at = self._now()
                     self._repository.record_success(
                         standings,
                         now,
-                        completed_at + self._refresh_interval,
+                        (
+                            self._policy.next_attempt(
+                                completed_at, completed_at, self._refresh_interval, self._phase
+                            )
+                            if self._policy
+                            else completed_at + self._refresh_interval
+                        ),
                     )
             finally:
                 self._refreshing = False
@@ -150,10 +168,33 @@ class StandingsRefreshCoordinator:
         finally:
             self._refresh_lock.release()
 
+    def _reconcile_schedule(self) -> None:
+        """
+        Bring normal due times forward when fixture activity or settings change.
+
+        Preserve failure retries and never delay an existing due attempt when
+        activity ends. Persist adjustments so API freshness and restarts agree.
+        """
+        if self._policy is None or self._refreshing:
+            return
+        data, _, due, error = self._repository.read_state()
+        if data is None or error:
+            return
+        proposed = self._policy.next_attempt(
+            data.retrieved_at, self._now(), self._refresh_interval, self._phase
+        )
+        if due is None or proposed < due:
+            self._repository.reschedule(proposed)
+
     def seconds_until_next_attempt(self) -> float:
         """
-        Return a bounded wait duration for the scheduler worker.
+        Reconcile the schedule and calculate the worker's next sleep.
+
+        Returns:
+            Non-negative seconds until the persisted due time; zero means an
+            immediate attempt. Policy reconciliation may update that due time.
         """
+        self._reconcile_schedule()
         _, _, next_refresh_at, _ = self._repository.read_state()
 
         if next_refresh_at is None:
@@ -164,6 +205,9 @@ class StandingsRefreshCoordinator:
     def _now(self) -> datetime:
         """
         Read the injected clock and require an aware instant.
+
+        Returns:
+            The clock value normalized to UTC; naive values fail before storage.
         """
         now = self._clock()
 
@@ -190,7 +234,9 @@ class FixturesRefreshCoordinator:
         *,
         refresh_interval: timedelta,
         failure_retry_interval: timedelta,
-        active_interval: timedelta = timedelta(minutes=30),
+        active_interval: timedelta = timedelta(minutes=5),
+        policy: MatchDayRefreshPolicy | None = None,
+        phase: timedelta = timedelta(0),
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         """
@@ -203,11 +249,17 @@ class FixturesRefreshCoordinator:
                 refresh is due.
             failure_retry_interval: Minimum delay after a failed attempt. A
                 provider Retry-After value extends this delay when necessary.
+            active_interval: Active cadence when no shared policy is injected.
+            policy: Shared local match-day policy; defaults to this fixture repository.
+            phase: Offset within the shared active cadence, not another interval.
             clock: Optional zero-argument UTC clock for deterministic tests.
         """
+        self._policy = policy or MatchDayRefreshPolicy(
+            lambda: repository.read_state()[0], active_interval
+        )
+        self._phase = phase
         self._service = service
         self._repository = repository
-        self._active_interval = active_interval
         self._refresh_interval = refresh_interval
         self._failure_retry_interval = failure_retry_interval
         self._clock = clock if clock is not None else lambda: datetime.now(UTC)
@@ -269,12 +321,15 @@ class FixturesRefreshCoordinator:
             return False
 
         try:
+            # Phase 1: Reconcile local activity before deciding whether I/O is due.
             now = self._now()
+            self._reconcile_schedule()
             _, _, next_refresh_at, _ = self._repository.read_state()
             if next_refresh_at is not None and now < next_refresh_at:
                 return False
 
             try:
+                # Phase 2: Persist the attempt before calling the provider.
                 self._refreshing = True
                 self._repository.record_attempt(
                     now,
@@ -308,12 +363,16 @@ class FixturesRefreshCoordinator:
                     )
                     logger.error("Fixtures refresh failed (%s)", type(exc).__name__)
                 else:
+                    # Phase 3: Commit validated data and the next deadline together.
                     completed_at = self._now()
                     self._repository.record_success(
                         fixtures,
                         now,
                         next_fixture_refresh(
-                            fixtures, completed_at, self._refresh_interval, self._active_interval
+                            fixtures,
+                            completed_at,
+                            self._refresh_interval,
+                            self._policy.active_interval,
                         ),
                     )
             finally:
@@ -323,10 +382,33 @@ class FixturesRefreshCoordinator:
         finally:
             self._refresh_lock.release()
 
+    def _reconcile_schedule(self) -> None:
+        """
+        Bring normal due times forward when fixture activity or settings change.
+
+        Preserve failure retries and never delay an existing due attempt when
+        activity ends. Persist adjustments so API freshness and restarts agree.
+        """
+        if self._policy is None or self._refreshing:
+            return
+        data, _, due, error = self._repository.read_state()
+        if data is None or error:
+            return
+        proposed = self._policy.next_attempt(
+            data.retrieved_at, self._now(), self._refresh_interval, self._phase
+        )
+        if due is None or proposed < due:
+            self._repository.reschedule(proposed)
+
     def seconds_until_next_attempt(self) -> float:
         """
-        Return a bounded wait duration for the scheduler worker.
+        Reconcile the schedule and calculate the worker's next sleep.
+
+        Returns:
+            Non-negative seconds until the persisted due time; zero means an
+            immediate attempt. Policy reconciliation may update that due time.
         """
+        self._reconcile_schedule()
         _, _, next_refresh_at, _ = self._repository.read_state()
 
         if next_refresh_at is None:
@@ -337,6 +419,9 @@ class FixturesRefreshCoordinator:
     def _now(self) -> datetime:
         """
         Read the injected clock and require an aware instant.
+
+        Returns:
+            The clock value normalized to UTC; naive values fail before storage.
         """
         now = self._clock()
 
@@ -349,6 +434,10 @@ class FixturesRefreshCoordinator:
 class RefreshWorker:
     """
     Run both dataset schedules sequentially on one background thread.
+
+    Fixtures run first so newly discovered match days can shorten the standings
+    deadline in the same iteration. The stop event interrupts sleep immediately;
+    start once per application lifespan and stop before closing dependencies.
     """
 
     def __init__(
@@ -360,7 +449,7 @@ class RefreshWorker:
         Create the worker that sleeps until the earliest dataset is due.
 
         Args:
-            coordinator: Standings schedule, retained as the first dataset.
+            coordinator: Standings schedule, executed after fixtures when present.
             fixtures: Optional independent fixtures schedule on this same thread.
         """
         self._coordinator = coordinator
@@ -376,10 +465,14 @@ class RefreshWorker:
 
     def stop(self) -> None:
         """
-        Signal shutdown and wait for an in-flight request to finish.
+        Signal shutdown and join before dependent resources may be closed.
+
+        Notes:
+            Called off the ASGI event loop. Provider operations use bounded
+            timeouts; waiting here prevents closing SQLite under a live worker.
         """
         self._stop_event.set()
-        self._thread.join(timeout=65)
+        self._thread.join()
 
     def _run(self) -> None:
         """
@@ -387,56 +480,117 @@ class RefreshWorker:
         """
         while not self._stop_event.is_set():
             try:
+                # Refresh fixtures first, then standings, using their independent deadlines.
+                if self._fixtures is not None:
+                    self._fixtures.refresh_if_due()
+                # Shutdown may arrive during fixture I/O; do not start another request.
+                if self._stop_event.is_set():
+                    break
+
                 self._coordinator.refresh_if_due()
                 wait_seconds = self._coordinator.seconds_until_next_attempt()
                 if self._fixtures is not None:
-                    self._fixtures.refresh_if_due()
                     wait_seconds = min(wait_seconds, self._fixtures.seconds_until_next_attempt())
             except Exception as exc:
                 logger.error("Football refresh worker failed (%s)", type(exc).__name__)
                 self._stop_event.wait(30)
                 continue
 
+            # Event.wait sleeps until the earliest deadline or an immediate stop signal.
             self._stop_event.wait(wait_seconds if wait_seconds > 0 else 1)
+
+
+class MatchDayRefreshPolicy:
+    """
+    Select a shared active cadence from locally saved EPL fixture dates.
+
+    Dates use Pacific calendar days, not a matchweek span or live-status guess.
+    UTC-aligned slots allow datasets to share a cadence with different offsets.
+    The policy performs no provider calls and owns no retry state.
+
+    Attributes:
+        active_interval: Shared positive interval used by both datasets.
+    """
+
+    def __init__(
+        self, fixtures: Callable[[], FixturesResponse | None], active_interval: timedelta
+    ) -> None:
+        """
+        Configure local fixture access and the one shared active interval.
+
+        Args:
+            fixtures: Reader for the complete saved season, not the two-week API view.
+            active_interval: Positive time between active requests for each dataset.
+        """
+        if active_interval.total_seconds() <= 0:
+            raise ValueError("Active interval must be positive")
+        self._fixtures = fixtures
+        self.active_interval = active_interval
+
+    def next_attempt(
+        self, after: datetime, now: datetime, quiet: timedelta, phase: timedelta = timedelta(0)
+    ) -> datetime:
+        """
+        Calculate a normal due time without altering retry deadlines.
+
+        Args:
+            after: Latest successful retrieval or completion instant.
+            now: Current UTC instant used to choose the activity mode.
+            quiet: This dataset's quiet-period interval.
+            phase: Dataset offset within the shared active cadence.
+
+        Returns:
+            Active slot after the success, or quiet deadline capped at the next
+            scheduled match day's start plus this dataset's phase.
+        """
+        # Phase 1: Derive active Pacific dates from the saved full-season schedule.
+        zone = ZoneInfo("America/Los_Angeles")
+        today = now.astimezone(zone).date()
+        data = self._fixtures()
+        days = (
+            {
+                match.kickoff.astimezone(zone).date()
+                for match in data.matches
+                if match.kickoff is not None and match.status not in {"POSTPONED", "CANCELLED"}
+            }
+            if data
+            else set()
+        )
+        # Phase 2: Pick the next staggered active slot, or the quiet-day boundary.
+        if today in days:
+            anchor = datetime(1970, 1, 1, tzinfo=UTC) + phase
+            # On entry to a new match day, retain the staggered first slot even
+            # when the last success belongs to a previous quiet day.
+            if after.astimezone(zone).date() < today:
+                after = datetime.combine(today, datetime.min.time(), tzinfo=zone).astimezone(
+                    UTC
+                ) - timedelta(microseconds=1)
+            slots = (after - anchor) // self.active_interval + 1
+            return anchor + slots * self.active_interval
+
+        due = after + quiet
+        future = [day for day in days if day > today]
+        if future:
+            boundary = datetime.combine(min(future), datetime.min.time(), tzinfo=zone).astimezone(
+                UTC
+            )
+            due = min(due, boundary + phase)
+        return due
 
 
 def next_fixture_refresh(
     data: FixturesResponse, now: datetime, quiet: timedelta, active: timedelta
 ) -> datetime:
     """
-    Schedule activity polling across the displayed round's local calendar days.
+    Calculate a fixture due time using the shared scheduled-day rule.
 
     Args:
-        data: Full season with provider-selected current matchday.
-        now: UTC completion instant.
-        quiet: Configured delay outside activity.
-        active: Configured delay during activity, including reported in-play games.
+        data: Complete season fixtures.
+        now: UTC successful completion instant.
+        quiet: Quiet fixture interval.
+        active: Shared active interval.
 
     Returns:
-        Next UTC attempt, capped at the next activity boundary to avoid sleeping
-        through kickoff. Postponed and cancelled games do not extend the window.
-
-    Notes:
-        Calendar-day boundaries use Los Angeles time, matching the dashboard.
-        Unknown kickoff times cannot establish an activity window.
+        Next fixture slot or quiet deadline, including future-day boundaries.
     """
-    local_zone = ZoneInfo("America/Los_Angeles")
-    if any(match.status in {"IN_PLAY", "PAUSED", "LIVE"} for match in data.matches):
-        return now + active
-
-    relevant = [
-        match.kickoff
-        for match in data.matches
-        if match.matchday == data.current_matchday
-        and match.kickoff is not None
-        and match.status not in {"POSTPONED", "CANCELLED"}
-    ]
-    if not relevant:
-        return now + quiet
-    start = min(relevant).astimezone(local_zone).replace(hour=0, minute=0, second=0, microsecond=0)
-    end = max(relevant).astimezone(local_zone).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    ) + timedelta(days=1)
-    if start <= now < end:
-        return min(now + active, end.astimezone(UTC))
-    return min(now + quiet, start.astimezone(UTC)) if now < start else now + quiet
+    return MatchDayRefreshPolicy(lambda: data, active).next_attempt(now, now, quiet)

@@ -14,6 +14,7 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from math import isfinite
 from typing import Any, Protocol
 
 import httpx
@@ -84,11 +85,11 @@ class ProviderConfigurationError(ProviderError):
 
 class FootballDataAdapter:
     """
-    Implement the football-data.org v4 standings integration.
+    Implement the football-data.org v4 standings and season-fixture integration.
 
     The adapter sends the server-held token in `X-Auth-Token`, uses a bounded
     synchronous HTTP client, and converts only the `TOTAL` EPL table into
-    `StandingsResponse`. The client and clock can be injected for deterministic
+    `StandingsResponse`; season matches become `FixturesResponse`. The client and clock can be injected for deterministic
     tests. It does not cache data or own persistence; the application refresh
     coordinator and SQLite repository own those concerns.
     """
@@ -225,12 +226,14 @@ class FootballDataAdapter:
         """
         if not isinstance(payload, dict) or payload.get("competition", {}).get("code") != "PL":
             raise ValueError("Expected EPL competition")
+        # Check response completeness before constructing any application models.
         rows = payload["matches"]
         if not isinstance(rows, list) or not rows:
             raise ValueError("No season identity available")
         if payload["resultSet"]["count"] != len(rows):
             raise ValueError("Incomplete match response")
 
+        # Normalize stable match/team identifiers and retain missing scores as null.
         season = rows[0]["season"]
         matches = []
         for row in rows:
@@ -256,6 +259,7 @@ class FootballDataAdapter:
                     away_score=row["score"]["fullTime"].get("away"),
                 )
             )
+        # Reject duplicates before the coordinator can commit this season.
         if len({match.id for match in matches}) != len(matches):
             raise ValueError("Duplicate match identifiers")
         return FixturesResponse(
@@ -302,6 +306,9 @@ class FootballDataAdapter:
                 "Provider response is missing competition, season, or standings data"
             )
 
+        if competition.get("code") != "PL":
+            raise ProviderError("Provider returned a non-EPL standings table")
+
         # The dashboard displays the league-wide table, not HOME or AWAY splits.
         total = next(
             (item for item in standings if isinstance(item, dict) and item.get("type") == "TOTAL"),
@@ -335,6 +342,12 @@ class FootballDataAdapter:
                 )
             )
 
+        # Duplicate ranks or team identities must never replace a valid saved table.
+        if len({row.team_id for row in rows}) != len(rows) or len(
+            {row.position for row in rows}
+        ) != len(rows):
+            raise ProviderError("Provider returned duplicate standings rows")
+
         # Assemble the application contract only after every required row is valid.
         try:
             return StandingsResponse(
@@ -366,12 +379,20 @@ class FootballDataAdapter:
 def _retry_after_seconds(value: str | None, now: datetime) -> float | None:
     """
     Parse numeric or HTTP-date Retry-After values without exposing headers.
+
+    Args:
+        value: Optional provider header, consumed only at this HTTP boundary.
+        now: Aware UTC clock used for absolute HTTP-date values.
+
+    Returns:
+        Non-negative delay in seconds, or None for missing/malformed guidance.
     """
     if value is None:
         return None
 
     try:
-        return max(0.0, float(value))
+        seconds = float(value)
+        return max(0.0, seconds) if isfinite(seconds) else None
     except ValueError:
         try:
             retry_at = parsedate_to_datetime(value)

@@ -12,16 +12,22 @@ independent from browser traffic and gives tests control over each boundary.
 
 import logging
 from collections.abc import AsyncGenerator, Callable
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 
 from api import router
 from config import Settings, get_settings
 from providers import FootballDataAdapter, FootballProvider
-from refresh import FixturesRefreshCoordinator, RefreshWorker, StandingsRefreshCoordinator
+from refresh import (
+    FixturesRefreshCoordinator,
+    MatchDayRefreshPolicy,
+    RefreshWorker,
+    StandingsRefreshCoordinator,
+)
 from service import FixturesService, StandingsService
 from storage import SQLiteFixturesRepository, SQLiteStandingsRepository
 
@@ -48,11 +54,11 @@ def create_app(
             the repository's `frontend/dist` directory is served when built.
 
     Returns:
-        FastAPI application with the standings API and managed local resources.
+        FastAPI application with both dataset APIs and managed local resources.
 
     Notes:
         The application is intended to run as one backend process. That process
-        owns one scheduler and one SQLite connection; do not start multiple
+        owns one scheduler and one SQLite connection per dataset; do not start multiple
         Uvicorn workers against the same refresh schedule.
     """
     logging.basicConfig(
@@ -66,8 +72,8 @@ def create_app(
         """
         Manage resources whose lifetime matches the running API process.
 
-        Startup opens the SQLite repository, constructs the provider and
-        standings refresh coordinator, and starts the optional background
+        Startup opens both SQLite repositories, constructs the provider and
+        dataset refresh coordinators, and starts the optional background
         worker. Request handlers use the coordinator to read local state; the
         worker owns scheduled provider calls. Shutdown stops the worker before
         closing its provider and repository dependencies.
@@ -79,69 +85,76 @@ def create_app(
             No value; yielding transfers control to FastAPI while the
             application is accepting requests.
         """
-        # Step 1: Open SQLite; repository construction creates missing tables
-        # and the singleton refresh-control row while preserving existing data.
-        path = database_path or resolved_settings.database_path
-        repository = SQLiteStandingsRepository(path)
+        # Register each resource immediately so partial startup also cleans up.
+        async with AsyncExitStack() as resources:
+            # Step 1: Open both SQLite datasets and create any missing tables.
+            path = database_path if database_path is not None else resolved_settings.database_path
+            repository = await run_in_threadpool(SQLiteStandingsRepository, path)
+            resources.push_async_callback(run_in_threadpool, repository.close)
+            fixtures_repository = await run_in_threadpool(SQLiteFixturesRepository, path)
+            resources.push_async_callback(run_in_threadpool, fixtures_repository.close)
 
-        # Step 2: Build the configured provider, or inject the test provider.
-        if provider_factory is None:
-            token = resolved_settings.football_data_token
-            provider: FootballProvider = FootballDataAdapter(
-                token.get_secret_value() if token else None,
-                base_url=resolved_settings.football_data_base_url,
-                timeout_seconds=resolved_settings.football_data_timeout_seconds,
-            )
-        else:
-            provider = provider_factory(resolved_settings)
+            # Step 2: Create provider networking, keeping blocking setup off ASGI's loop.
+            if provider_factory is None:
+                token = resolved_settings.football_data_token
+                provider: FootballProvider = await run_in_threadpool(
+                    FootballDataAdapter,
+                    token.get_secret_value() if token else None,
+                    base_url=resolved_settings.football_data_base_url,
+                    timeout_seconds=resolved_settings.football_data_timeout_seconds,
+                )
+            else:
+                provider = await run_in_threadpool(provider_factory, resolved_settings)
 
-        # Step 3: Wire provider access to local persistence and refresh policy.
-        coordinator = StandingsRefreshCoordinator(
-            StandingsService(provider),
-            repository,
-            refresh_interval=timedelta(
-                seconds=resolved_settings.standings_refresh_interval_seconds
-            ),
-            failure_retry_interval=timedelta(
-                seconds=resolved_settings.standings_failure_retry_seconds
-            ),
-            clock=clock,
-        )
-        # Fixtures use independent persisted due times on the same worker.
-        fixtures_repository = SQLiteFixturesRepository(path)
-        fixtures_coordinator = FixturesRefreshCoordinator(
-            FixturesService(provider),
-            fixtures_repository,
-            refresh_interval=timedelta(seconds=resolved_settings.fixtures_refresh_interval_seconds),
-            active_interval=timedelta(seconds=resolved_settings.fixtures_active_interval_seconds),
-            failure_retry_interval=timedelta(
-                seconds=resolved_settings.fixtures_failure_retry_seconds
-            ),
-            clock=clock,
-        )
-        application.state.fixtures_refresh = fixtures_coordinator
-        worker = RefreshWorker(coordinator, fixtures_coordinator)
-
-        # Step 4: Make the coordinator available to API routes for local reads.
-        application.state.standings_refresh = coordinator
-
-        # Step 5: Start the scheduled provider worker when enabled.
-        if start_refresh_worker:
-            worker.start()
-
-        try:
-            yield
-        finally:
-            # Shutdown: stop the worker before closing resources it may be using.
-            if start_refresh_worker:
-                worker.stop()
-
-            # Close provider networking, then close the SQLite connection.
             close_provider = getattr(provider, "close", None)
             if callable(close_provider):
-                close_provider()
-            repository.close()
-            fixtures_repository.close()
+                resources.push_async_callback(run_in_threadpool, close_provider)
+
+            active_interval = timedelta(seconds=resolved_settings.active_refresh_interval_seconds)
+            policy = MatchDayRefreshPolicy(
+                lambda: fixtures_repository.read_state()[0], active_interval
+            )
+
+            # Step 3: Wire provider access to local persistence and refresh policy.
+            coordinator = StandingsRefreshCoordinator(
+                StandingsService(provider),
+                repository,
+                refresh_interval=timedelta(
+                    seconds=resolved_settings.standings_refresh_interval_seconds
+                ),
+                failure_retry_interval=timedelta(
+                    seconds=resolved_settings.standings_failure_retry_seconds
+                ),
+                policy=policy,
+                phase=active_interval / 2,
+                clock=clock,
+            )
+            # Fixtures use independent persisted due times on the same worker.
+            fixtures_coordinator = FixturesRefreshCoordinator(
+                FixturesService(provider),
+                fixtures_repository,
+                refresh_interval=timedelta(
+                    seconds=resolved_settings.fixtures_refresh_interval_seconds
+                ),
+                policy=policy,
+                failure_retry_interval=timedelta(
+                    seconds=resolved_settings.fixtures_failure_retry_seconds
+                ),
+                clock=clock,
+            )
+            worker = RefreshWorker(coordinator, fixtures_coordinator)
+
+            # Step 4: Expose both coordinators for read-only API access.
+            application.state.standings_refresh = coordinator
+            application.state.fixtures_refresh = fixtures_coordinator
+
+            # Step 5: Start the scheduled provider worker when enabled.
+            if start_refresh_worker:
+                worker.start()
+                resources.push_async_callback(run_in_threadpool, worker.stop)
+
+            # Step 6: Serve requests; unwind worker, provider and storage in reverse order.
+            yield
 
     application = FastAPI(title="EPL Dashboard API", version="0.2.0", lifespan=lifespan)
     application.include_router(router, prefix="/api")

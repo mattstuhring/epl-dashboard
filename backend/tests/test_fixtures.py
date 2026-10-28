@@ -139,7 +139,7 @@ def test_refresh_preserves_data_on_failure_and_missing_matches(tmp_path: Path):
     )
     assert coordinator.refresh_if_due()
     assert not coordinator.refresh_if_due()
-    assert coordinator.get_state().next_refresh_at == NOW + timedelta(minutes=30)
+    assert coordinator.get_state().next_refresh_at == NOW + timedelta(minutes=5)
     clock[0] += timedelta(minutes=30)
     provider.result = data().model_copy(update={"matches": ()})
     coordinator.refresh_if_due()

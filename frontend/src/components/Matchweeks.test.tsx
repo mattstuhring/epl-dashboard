@@ -4,16 +4,34 @@ import { Matchweeks } from './Matchweeks'
 import { TeamCrest } from './TeamCrest'
 
 const fixture = {
-  id: 1, matchday: 8, kickoff: '2026-10-24T17:00:00Z', status: 'FINISHED',
+  id: 1,
+  matchday: 8,
+  kickoff: '2026-10-24T17:00:00Z',
+  status: 'FINISHED',
   home: { id: 66, name: 'Manchester United', crest: 'https://example.org/united.svg' },
-  away: { id: 57, name: 'Arsenal', crest: null }, home_score: 0, away_score: 2,
+  away: { id: 57, name: 'Arsenal', crest: null },
+  home_score: 0,
+  away_score: 2,
 }
 const state = {
-  fixtures: { season_id: 2026, current_matchday: 8, retrieved_at: '2026-10-24T18:00:00Z', matches: [fixture, { ...fixture, id: 2, matchday: 9, status: 'TIMED', home_score: null, away_score: null }] },
-  refresh_status: 'fresh', next_refresh_at: '2026-10-24T18:30:00Z', refresh_error: null,
+  fixtures: {
+    season_id: 2026,
+    current_matchday: 8,
+    retrieved_at: '2026-10-24T18:00:00Z',
+    matches: [
+      fixture,
+      { ...fixture, id: 2, matchday: 9, status: 'TIMED', home_score: null, away_score: null },
+    ],
+  },
+  refresh_status: 'fresh',
+  next_refresh_at: '2026-10-24T18:30:00Z',
+  refresh_error: null,
 }
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 it('shows numbered matchweeks, scores including zero, local kickoffs, crests and favorite highlighting', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => state }))
@@ -28,14 +46,27 @@ it('shows numbered matchweeks, scores including zero, local kickoffs, crests and
 })
 
 it('preserves a visible provider error without showing an empty successful schedule', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...state, fixtures: null, refresh_status: 'error', refresh_error: 'Fixture refresh failed.' }) }))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...state,
+        fixtures: null,
+        refresh_status: 'error',
+        refresh_error: 'Fixture refresh failed.',
+      }),
+    }),
+  )
   render(<Matchweeks favoriteTeamId={null} />)
   expect(await screen.findByText('Fixture data is not available yet.')).toBeInTheDocument()
   expect(screen.getByText('Fixture refresh failed.')).toBeInTheDocument()
 })
 
 it('uses an initials fallback when an image fails', async () => {
-  const { container } = render(<TeamCrest name="Manchester United" url="https://example.org/united.svg" />)
+  const { container } = render(
+    <TeamCrest name="Manchester United" url="https://example.org/united.svg" />,
+  )
   fireEvent.error(container.querySelector('img')!)
   await waitFor(() => expect(screen.getByText('MA')).toBeInTheDocument())
 })

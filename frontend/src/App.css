@@ -192,12 +192,6 @@ tbody .favorite-row {
   white-space: nowrap;
 }
 
-.favorite-marker {
-  margin-right: 9px;
-  color: #839c65;
-  font-size: 12px;
-}
-
 .points-cell {
   color: var(--ink);
   font-weight: 800;
@@ -321,7 +315,6 @@ tbody .favorite-row {
   }
 }
 
-
 .view-toolbar {
   display: flex;
   align-items: center;
@@ -349,12 +342,6 @@ tbody .favorite-row {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.4;
-}
-
-.view-indicators {
-  display: flex;
-  align-items: center;
-  gap: 2px;
 }
 
 .rotation-controls,
@@ -386,13 +373,13 @@ tbody .favorite-row {
   cursor: pointer;
 }
 
-.rotation-toggle[aria-checked="true"] {
+.rotation-toggle[aria-checked='true'] {
   background: var(--green);
   border-color: var(--green);
   box-shadow: 0 0 0 3px #e1e9dc;
 }
 
-.rotation-toggle[aria-checked="false"] span {
+.rotation-toggle[aria-checked='false'] span {
   opacity: 0.55;
 }
 
@@ -407,38 +394,8 @@ tbody .favorite-row {
   }
 }
 
-.view-indicators button {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 36px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.view-indicators button::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border: 1px solid var(--muted);
-  border-radius: 8px;
-  background: transparent;
-}
-
-.view-indicators button[aria-pressed="true"]::before {
-  width: 24px;
-  border-color: var(--green);
-  background: var(--green);
-}
-
-.view-indicators button:hover::before {
-  border-color: var(--green);
-}
-
-.team-crest, .crest-fallback {
+.team-crest,
+.crest-fallback {
   display: inline-block;
   width: 26px;
   height: 26px;
@@ -456,7 +413,8 @@ tbody .favorite-row {
   text-align: center;
 }
 
-.team-cell .team-crest, .team-cell .crest-fallback {
+.team-cell .team-crest,
+.team-cell .crest-fallback {
   margin-right: 9px;
 }
 
@@ -477,7 +435,9 @@ tbody .favorite-row {
 }
 
 .matchweek-header h2 {
-  font: 30px Georgia, serif;
+  font:
+    30px Georgia,
+    serif;
   margin: 0;
 }
 
@@ -575,7 +535,6 @@ tbody .favorite-row {
   }
 }
 
-
 .standings-toolbar {
   min-height: 70px;
   padding: 0 0 16px;
@@ -629,10 +588,6 @@ tbody .favorite-row {
   margin-right: 5px;
 }
 
-.standings-grid .favorite-marker {
-  margin-right: 4px;
-}
-
 @media (max-width: 1100px) {
   .standings-grid {
     grid-template-columns: 1fr;
@@ -643,12 +598,17 @@ tbody .favorite-row {
   height: 50px;
 }
 
+.champions-zone {
+  --position-color: #496c9c;
+}
+.europa-zone {
+  --position-color: #a46c2e;
+}
+.relegation-zone {
+  --position-color: #a55752;
+}
 
-.champions-zone { --position-color: #496c9c; }
-.europa-zone { --position-color: #a46c2e; }
-.relegation-zone { --position-color: #a55752; }
-
-.standings-grid .rank-cell[class*="-zone"] {
+.standings-grid .rank-cell[class*='-zone'] {
   box-shadow: inset 3px 0 var(--position-color);
 }
 
@@ -675,7 +635,6 @@ tbody .favorite-row {
   background: var(--position-color);
 }
 
-
 .standings-toolbar {
   flex-wrap: wrap;
   gap: 16px 24px;
@@ -694,7 +653,6 @@ tbody .favorite-row {
     justify-content: flex-start;
   }
 }
-
 
 .dashboard-controls {
   display: flex;
@@ -720,7 +678,6 @@ tbody .favorite-row {
   min-height: 0;
 }
 
-
 /* Landscape displays use width for readability and height for row spacing.
    Keep the normal stacked layout for smaller browser windows. */
 @media (min-width: 1200px) and (min-height: 800px) {
@@ -734,18 +691,28 @@ tbody .favorite-row {
     padding: 8px 0;
   }
 
-  .wordmark { font-size: 14px; }
-  .brand-tagline, .season-label { font-size: 14px; }
+  .wordmark {
+    font-size: 14px;
+  }
+  .brand-tagline,
+  .season-label {
+    font-size: 14px;
+  }
 
-  h1 { font-size: 40px; }
+  h1 {
+    font-size: 40px;
+  }
 
   .view-toolbar {
     margin-bottom: 16px;
     padding: 16px 0;
   }
-  .rotation-controls, .rotation-interval,
+  .rotation-controls,
+  .rotation-interval,
   .dashboard-controls .favorite-picker > span,
-  .favorite-picker select { font-size: 14px; }
+  .favorite-picker select {
+    font-size: 14px;
+  }
 
   .standings-grid caption,
   .fixtures-mode .matchweek-header {
@@ -753,30 +720,53 @@ tbody .favorite-row {
   }
 
   .standings-grid caption,
-  .fixtures-mode .matchweek-header h2 { font-size: 26px; }
+  .fixtures-mode .matchweek-header h2 {
+    font-size: 26px;
+  }
 
   .standings-grid tbody tr {
     height: clamp(44px, calc((100dvh - 400px) / 10), 64px);
     font-size: var(--data-font-size);
   }
 
-  .standings-grid .team-cell { font-size: var(--data-font-size); }
-  .standings-grid th, .standings-grid td { padding-right: 8px; padding-left: 8px; }
-  .standings-grid thead { height: 38px; }
-  .standings-grid thead th { font-size: 12px; }
+  .standings-grid .team-cell {
+    font-size: var(--data-font-size);
+  }
+  .standings-grid th,
+  .standings-grid td {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+  .standings-grid thead {
+    height: 38px;
+  }
+  .standings-grid thead th {
+    font-size: 12px;
+  }
 
-  .team-crest, .crest-fallback,
-  .standings-grid .team-crest, .standings-grid .crest-fallback {
+  .team-crest,
+  .crest-fallback,
+  .standings-grid .team-crest,
+  .standings-grid .crest-fallback {
     width: var(--crest-size);
     height: var(--crest-size);
     line-height: var(--crest-size);
   }
 
-  .standings-grid .team-crest, .standings-grid .crest-fallback { margin-right: 8px; }
-  .standings-key { font-size: 13px; }
-  .standings-toolbar { padding-bottom: 12px; }
+  .standings-grid .team-crest,
+  .standings-grid .crest-fallback {
+    margin-right: 8px;
+  }
+  .standings-key {
+    font-size: 13px;
+  }
+  .standings-toolbar {
+    padding-bottom: 12px;
+  }
 
-  .fixture-club { font-size: var(--data-font-size); }
+  .fixture-club {
+    font-size: var(--data-font-size);
+  }
   .fixtures-mode .fixture-row {
     padding: clamp(2px, calc((100dvh - 900px) / 20), 9px) 18px;
   }
@@ -791,16 +781,25 @@ tbody .favorite-row {
     font-size: var(--data-font-size);
     line-height: 22px;
   }
-  .matchweek-header > span { font-size: 13px; }
+  .matchweek-header > span {
+    font-size: 13px;
+  }
 
-  .table-footer { padding: 10px 12px; font-size: 12px; }
-  .page-footer { padding: 12px 2px 16px; font-size: 10px; }
+  .table-footer {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .page-footer {
+    padding: 12px 2px 16px;
+    font-size: 10px;
+  }
 }
-
 
 /* Keep each matchup visually connected around its score. */
 @media (min-width: 1200px) and (min-height: 800px) {
-  .fixture-teams { gap: 16px; }
+  .fixture-teams {
+    gap: 16px;
+  }
   .fixture-club {
     flex-direction: row-reverse;
     justify-content: flex-start;
@@ -821,4 +820,231 @@ tbody .favorite-row {
     font-size: 16px;
     font-weight: 500;
   }
+}
+
+/* An overlay keeps navigation from squeezing the data layout. */
+.brand-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-button {
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 24px;
+  padding: 8px;
+  cursor: pointer;
+}
+.dashboard-drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  margin: 0;
+  width: min(360px, 90vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  box-sizing: border-box;
+  border: 0;
+  border-right: 1px solid var(--line);
+  padding: 24px;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-y: auto;
+}
+.dashboard-drawer::backdrop {
+  background: rgb(20 35 26 / 30%);
+}
+.drawer-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.drawer-heading h2 {
+  margin: 0;
+  font:
+    28px Georgia,
+    serif;
+}
+.drawer-label {
+  margin: 32px 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.drawer-navigation {
+  display: grid;
+  gap: 8px;
+}
+.drawer-navigation button {
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.drawer-navigation button[aria-current='page'] {
+  background: var(--green);
+  color: white;
+}
+.dashboard-drawer .dashboard-controls {
+  display: grid;
+  gap: 24px;
+}
+.dashboard-drawer .favorite-picker {
+  display: grid;
+}
+.dashboard-drawer .favorite-picker select {
+  width: 100%;
+  min-width: 0;
+}
+.drawer-hint {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.freshness-summary {
+  position: relative;
+  cursor: help;
+}
+.freshness-details {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  bottom: 100%;
+  right: 0;
+  width: min(320px, 75vw);
+  padding: 12px;
+  background: var(--ink);
+  color: white;
+  border-radius: 5px;
+  line-height: 1.5;
+}
+.freshness-summary:hover .freshness-details,
+.freshness-summary:focus .freshness-details {
+  display: block;
+}
+.screen-panel:not([hidden]) {
+  animation: screen-arrive 240ms ease-out;
+}
+@keyframes screen-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.stale-message {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: 85vw;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen-panel:not([hidden]) {
+    animation: none;
+  }
+}
+.following-club {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--green);
+}
+
+.supporter-signature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.supporter-signature .team-crest,
+.supporter-signature .crest-fallback {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+}
+.supporter-details {
+  display: grid;
+  gap: 5px;
+}
+.supporter-name {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+.supporter-club {
+  color: var(--muted);
+  font-size: 11px;
+}
+.supporter-number {
+  padding-left: 6px;
+  font:
+    400 48px/1 Georgia,
+    serif;
+  color: var(--muted);
+}
+@media (max-width: 540px) {
+  .title-navigation {
+    width: 100%;
+  }
+  .supporter-signature {
+    margin-top: 6px;
+  }
+}
+.signature-settings {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.signature-settings legend {
+  padding: 0 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.signature-settings label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.signature-settings input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.signature-settings p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.supporter-name {
+  overflow-wrap: anywhere;
+}
+.supporter-details {
+  max-width: 220px;
 }

@@ -1,6 +1,6 @@
 # EPL Dashboard frontend
 
-The React and TypeScript interface displays normalized standings and refresh state from the local FastAPI backend. It reads `/api/standings`; Vite proxies `/api` to `http://127.0.0.1:8000` during development. The page checks the local API every 60 seconds so it can display backend state changes. Those reads use SQLite and do not make provider requests. The backend performs standings refreshes on its own schedule. The table footer displays the last successful update and next scheduled attempt in `America/Los_Angeles` time. The favorite club starts as Manchester United when that team is present, can be changed beside the carousel controls, and is saved in this browser.
+The React and TypeScript interface displays normalized standings and refresh state from the local FastAPI backend. It reads `/api/standings`; Vite proxies `/api` to `http://127.0.0.1:8000` during development. The page checks the local API 60 seconds after each completed request so it can display backend state changes. Those reads use SQLite and do not make provider requests. The backend performs standings refreshes on its own schedule. The table footer displays the last successful update and next scheduled attempt in `America/Los_Angeles` time. The favorite club starts as Manchester United when that team is present, can be changed in the sidebar, and is saved in this browser.
 
 The detailed requirements and Codex instructions are maintained locally under the repository's root `docs/` and `AGENTS.md`; they are intentionally excluded from Git. This README stays with the source and covers routine setup, checks, and running the frontend.
 
@@ -50,16 +50,16 @@ For a production-like local run, create the Vite build with `npm ci && npm run b
 
 ## Matchweek view and crests
 
-Choose the **Matchweeks** page indicator beside the title to see the provider-numbered current round and following round as chronological lists. Dates and kickoff times use Pacific time; scores preserve zero versus unknown values. In-play, halftime, final, postponed and other statuses are labelled. Favorite-team matches use the standings view's chosen favorite.
+Choose **Matchweeks** from the dashboard menu to see the provider-numbered current round and following round as chronological lists. Dates and kickoff times use Pacific time; scores preserve zero versus unknown values. In-play, halftime, final, postponed and other statuses are labelled. Favorite-team matches use the standings view's chosen favorite.
 
-The view polls the local `/api/fixtures` endpoint every 60 seconds while open; the backend owns provider polling. Loading, first-fetch errors, stale saved data and empty selected weeks are distinct states. A discreet footer shows the last successful update and next attempt using the same freshness component as standings.
+The view polls the local `/api/fixtures` endpoint 60 seconds after each completed local request while mounted; the backend owns provider polling. Loading, first-fetch errors, stale saved data and empty selected weeks are distinct states. A discreet footer shows the last successful update and next attempt using the same freshness component as standings.
 
 Team crests are now displayed in both standings and fixtures. HTTPS images come from provider-supplied URLs, with initials when missing or failed. The browser may retrieve these images from the crest host; credentials are never sent with them. The backend fetches no image assets, and no additional frontend dependency is required. The selected view is saved in browser storage. View switching supports the optional carousel described below.
 
 
-## Page indicators and automatic rotation
+## Navigation and automatic rotation
 
-New browsers start with rotation paused and a 60-second interval. Select a page indicator at any time; selecting any view (including the visible one) pauses rotation indefinitely. Use the small **soccer-ball toggle** beside the interval selector: a green background means auto-rotation is on; a muted ball means it is off. Hover text shows “Auto-rotate: On” or “Auto-rotate: Off”. Keyboard and screen-reader users can operate it as the Auto-rotate switch. There is no inactivity-based automatic resume and mouse movement alone does not change rotation.
+New browsers start with rotation paused and a 60-second interval. Select a screen from the menu at any time; selecting any view (including the visible one) pauses rotation indefinitely. Use the small **soccer-ball toggle** beside the interval selector: a green background means auto-rotation is on; a muted ball means it is off. Hover text shows “Auto-rotate: On” or “Auto-rotate: Off”. Keyboard and screen-reader users can operate it as the Auto-rotate switch. There is no inactivity-based automatic resume and mouse movement alone does not change rotation.
 
 Use **Every** to select 30 seconds, 1 minute, 2 minutes, or 5 minutes per view. Starting rotation, changing the interval, or advancing to a new view gives that view a full interval. The carousel wraps between League table and Matchweeks. It does not change backend provider schedules; existing local API polling continues as before.
 
@@ -85,6 +85,20 @@ The kiosk target is landscape **1920×1080 at 100% Chromium zoom**. The dashboar
 
 At 1080p, club names/statistics are 17px and crests about 28px, with both ten-row panels and freshness details visible. Smaller windows keep the existing stacked/scrolling layout as needed. Display resolution, desktop scaling, browser zoom and unusually long data/error messages can affect the fit; local browser verification is separate from testing the physical Pi display.
 
-The page title, small clickable view indicators, rotation settings and global favorite preference share one row on wide screens. The current indicator is a green pill; inactive views use dots with hover labels. Controls wrap on narrower windows. Insight subtitles remain a future enhancement.
+The title and supporter signature share one row on wide screens and wrap on narrow windows. Screen selection, rotation and favorite controls are in the overlay sidebar. Subtitles are static football-themed flavor text; data-driven insight subtitles remain deferred.
 
 The landscape presentation uses slightly wider side margins, inward-facing club/crest alignment around each matchup, and lighter score treatments. Kickoff times are quieter than reported scores.
+
+### Dashboard menu and display behavior
+
+Open the menu beside the brand to choose a screen, toggle automatic rotation, change its interval, or select your club. Opening the menu suspends rotation temporarily; closing it resumes an enabled carousel with a full interval. Choosing a screen pauses rotation until you enable it again. Escape, the close button, or the shaded backdrop dismisses the menu.
+
+Both datasets remain loaded while switching screens and continue polling the local API once per minute. This does not trigger provider requests. Screen changes have a brief fade, disabled for reduced-motion preferences; background data updates retain the existing tables. A full browser reload still restarts the app. Hover or focus the compact freshness summary for exact Pacific timestamps. “Next check” is the scheduled backend attempt, not a guarantee of new provider data.
+
+Under **Supporter signature**, edit your surname (up to 24 characters) and shirt number (up to two digits). Changes appear immediately on both screens and save automatically in this browser. The signature displays the surname in uppercase; clearing a field hides that part. STUHRING and 9 are initial defaults. Preferences are specific to the browser profile and site address; configure them separately on the Pi. Clearing browser storage resets them. The crest and club name still follow your favorite club.
+
+## Readability and verification
+
+Use `npm run format` to apply the frontend formatting convention and `npm run format:check` to verify it. Run `npm run lint`, `npm test`, and `npm run build` for linting, offline behavior tests and TypeScript/production-build checks. Prettier is a development dependency, not part of the browser bundle.
+
+Components own presentation and interaction; hooks own polling and saved preferences; `api.ts` owns local HTTP reads. Polls are serialized, cancelled on unmount and aborted after a 15-second local request timeout. Failed reads retain the last successful response. Menu selection and backend provider schedules remain independent.

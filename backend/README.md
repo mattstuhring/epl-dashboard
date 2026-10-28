@@ -1,6 +1,6 @@
 # EPL Ambient Dashboard backend
 
-The backend provides the dashboard's FastAPI API and isolates football-data.org v4 behind the `FootballProvider` protocol and `FootballDataAdapter`. A single lifespan-managed worker refreshes standings and fixtures into separate SQLite datasets; `GET /api/standings` reads that local state and never calls the provider. This keeps browser and kiosk polling independent of provider request usage. The standings quiet-period interval is 12 hours by default. Fixtures include scores, statuses, crests, and independently scheduled refresh state.
+The backend provides the dashboard's FastAPI API and isolates football-data.org v4 behind the `FootballProvider` protocol and `FootballDataAdapter`. A single lifespan-managed worker refreshes standings and fixtures into separate SQLite datasets; `GET /api/standings` reads that local state and never calls the provider. This keeps browser and kiosk polling independent of provider request usage. The standings quiet-period interval is 12 hours by default; both datasets use a shared 5-minute cadence on scheduled match days. Fixtures include scores, statuses, crests, and independently scheduled refresh state.
 
 The detailed requirements and Codex instructions are maintained locally under the repository's root `docs/` and `AGENTS.md`; they are intentionally excluded from Git. This README stays with the source and covers routine setup, checks, and running the backend.
 
@@ -35,7 +35,7 @@ From `backend/`, start the development server:
 .venv/bin/uvicorn main:app --app-dir src --reload
 ```
 
-The API listens on `http://127.0.0.1:8000`. Visit `/docs` for the generated OpenAPI documentation and `/api/standings` for standings plus refresh state. A background worker attempts the initial refresh at startup when no schedule exists. Repeated API reads do not cause provider requests. Run one Uvicorn worker because the current scheduler is process-local. Stop the development server with `Ctrl+C`; FastAPI closes the provider and database connection during shutdown while keeping the SQLite file for the next start. See [`frontend/README.md`](../frontend/README.md) for the browser setup.
+The API listens on `http://127.0.0.1:8000`. Visit `/docs` for the generated OpenAPI documentation and `/api/standings` for standings plus refresh state. A background worker attempts the initial refresh at startup when no schedule exists. Repeated API reads do not cause provider requests. Run one Uvicorn worker because the current scheduler is process-local. Stop the development server with `Ctrl+C`; FastAPI stops and joins the worker before closing the provider and both dataset database connections during shutdown while keeping the SQLite file for the next start. See [`frontend/README.md`](../frontend/README.md) for the browser setup.
 
 ## Serve the built frontend
 
@@ -60,10 +60,16 @@ The adapter retrieves the current season from `/v4/competitions/PL/matches` in o
 Fixture refresh settings are optional environment variables:
 
 - `FIXTURES_REFRESH_INTERVAL_SECONDS`: quiet-period delay, default `21600` (6 hours).
-- `FIXTURES_ACTIVE_INTERVAL_SECONDS`: active matchweek delay, default `1800` (30 minutes), including matches reported in play.
+- `ACTIVE_REFRESH_INTERVAL_SECONDS`: shared active-day interval for standings and fixtures, default `300` (5 minutes).
 - `FIXTURES_FAILURE_RETRY_SECONDS`: failure retry delay, default `900` (15 minutes); a longer provider `Retry-After` takes precedence.
 
-The initial activity boundary is the first through last dated fixture day of the provider-selected current round, in `America/Los_Angeles`. Postponed/cancelled games do not extend that window. A quiet-period wait is shortened at the known start of activity. Reported in-play games also keep the active cadence. These calendar-day boundaries are an implementation default; no separate 15-minute in-play cadence is used. Scores reflect the latest provider response and are not guaranteed real-time; account-specific provider delays and fixture access still require a live check.
+An active day is any Pacific calendar date with a currently scheduled EPL fixture in the full saved season, regardless of weekday or displayed matchweek. Finished games still count for that day; postponed/cancelled games do not. Gaps between match days are quiet. Missing fixture data uses quiet intervals until a successful fixture fetch establishes activity. No game-end detection or live-status override is needed.
+
+One worker checks fixtures first, then standings, and sleeps until the earliest persisted due time. Active requests use UTC-aligned 5-minute slots: fixtures at `:00`, `:05`, etc., and standings halfway between (`:02:30`, `:07:30`, etc.). The offset is derived from half the shared interval, not another setting. Empty datasets bootstrap immediately; normal recurring requests are then staggered. Quiet intervals remain 6 hours for fixtures and 12 hours for standings.
+
+New fixture dates and entry into an active day can bring a normal due time forward. The next known match-day boundary also caps a quiet wait, preventing the worker from sleeping through it. At the end of activity, an already scheduled attempt is not postponed; after it succeeds, the quiet interval applies. Each dataset retains its own stored snapshot, attempt history and retry deadline. Policy reconciliation never shortens a recorded failure retry or Retry-After delay.
+
+**Updating an existing Pi:** replace any old `FIXTURES_ACTIVE_INTERVAL_SECONDS` entry in `backend/.env` with `ACTIVE_REFRESH_INTERVAL_SECONDS=300`, then restart the service. The old key is no longer used. Existing snapshots remain intact and normal saved due times are reconsidered automatically; do not clear the database to activate this policy. Browser polling remains local and does not trigger provider requests. Scores are still subject to the data plan's upstream delay.
 
 No data reset is needed when deploying this feature. Fixture tables are created alongside existing standings tables at startup. Existing standings snapshots without crests remain readable and acquire logos after their next successful refresh. Restart the backend after changing environment settings.
 
@@ -187,3 +193,7 @@ The automated tests use sanitized sample responses and injected dependencies. Th
 ```
 
 An authenticated browser smoke check with a locally configured token tests live provider access separately from offline checks. On 2026-10-25, the backend was installed and run on the Pi 5 (Debian 13.7, aarch64, Python 3.13.5) as a manually started systemd service; /api/standings returned standings data and successful refresh state. Sustained operation and resource use have not been measured, and boot startup is intentionally disabled on this Pi.
+
+### Resource ownership
+
+The application lifespan registers cleanup immediately after opening each resource, including during partial startup failures. Blocking setup and cleanup run off the ASGI event loop. Shutdown waits for the refresh worker before closing its provider and repositories; do not run multiple Uvicorn workers against these process-local schedules.

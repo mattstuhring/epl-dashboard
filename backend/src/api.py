@@ -1,5 +1,5 @@
 """
-Expose the dashboard's persisted standings and refresh status over HTTP.
+Expose the dashboard's persisted standings, matchweeks and refresh status over HTTP.
 
 Routes return normalized application models read from local SQLite state. They
 never create a provider client or call football-data.org; the application-level
@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 
 from models import FixturesStateResponse, StandingsStateResponse
-from refresh import StandingsRefreshCoordinator
+from refresh import FixturesRefreshCoordinator, StandingsRefreshCoordinator
 
 router = APIRouter()
 
@@ -52,15 +52,30 @@ def get_standings(
     return coordinator.get_state()
 
 
+def get_fixtures_refresh(request: Request) -> FixturesRefreshCoordinator:
+    """
+    Resolve the process-owned fixture coordinator through FastAPI dependency injection.
+
+    Args:
+        request: Current request carrying lifespan-managed application state.
+
+    Returns:
+        The shared coordinator; resolving it does not fetch provider data.
+    """
+    return request.app.state.fixtures_refresh
+
+
 @router.get("/fixtures", response_model=FixturesStateResponse)
-def get_fixtures(request: Request) -> FixturesStateResponse:
+def get_fixtures(
+    coordinator: Annotated[FixturesRefreshCoordinator, Depends(get_fixtures_refresh)],
+) -> FixturesStateResponse:
     """
     Read the current and next numbered matchweeks without provider requests.
 
     Args:
-        request: Request containing the lifespan-owned fixtures coordinator.
+        coordinator: Lifespan-owned coordinator injected by FastAPI.
 
     Returns:
         Last successful fixture weeks and independent refresh metadata.
     """
-    return request.app.state.fixtures_refresh.get_state()
+    return coordinator.get_state()

@@ -2,7 +2,7 @@
 Load and validate configuration for backend integrations and behavior.
 
 `Settings` is the single source for environment-backed values, including the
-football-data.org credential and request settings. FastAPI dependencies obtain
+football-data.org credential and request settings. The application factory obtains
 the cached settings instance through `get_settings`, while tests can construct
 independent settings directly. Pydantic Settings parses environment variables
 and the gitignored local `.env` file, then validates them before route or
@@ -25,12 +25,12 @@ class Settings(BaseSettings):
         football_data_token: Optional server-side API credential. `SecretStr` redacts the value.
         football_data_base_url: HTTPS root URL for the football-data.org v4 API.
         football_data_timeout_seconds: Positive upper-bounded timeout for each provider request.
-        favorite_team_id: Optional positive provider team identifier selected for favorite-team behavior in a later application milestone.
+        favorite_team_id: Optional positive provider team identifier reserved for future server-side favorite behavior; the UI currently stores its own preference.
         database_path: Local SQLite database path for durable refresh state.
         standings_refresh_interval_seconds: Quiet-period interval for standings.
         standings_failure_retry_seconds: Minimum wait before retrying a failed standings refresh; provider Retry-After can extend this wait.
         fixtures_refresh_interval_seconds: Fixture polling delay during quiet periods.
-        fixtures_active_interval_seconds: Fixture polling delay during active matchweeks.
+        active_refresh_interval_seconds: Shared active match-day delay for both datasets.
         fixtures_failure_retry_seconds: Minimum fixture failure retry delay.
     """
 
@@ -54,11 +54,11 @@ class Settings(BaseSettings):
         description="Per-request provider timeout in seconds; must be greater than 0 and at most 60.",
     )
 
-    # This remains unset until the favorite team is configured by the user.
+    # Reserved server setting; the browser favorite is currently independent.
     favorite_team_id: int | None = Field(
         default=None,
         gt=0,
-        description="Optional positive provider team ID used for favorite-team behavior.",
+        description="Optional positive provider team ID reserved for future server-side favorite behavior.",
     )
 
     # Keep dashboard state local to the backend project and outside version control.
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
         description="Path to the local SQLite database used for durable dashboard state.",
     )
 
-    # Quiet-period default approved for standings; activity windows are added with fixtures.
+    # Quiet default; the shared match-day policy selects the active interval.
     standings_refresh_interval_seconds: int = Field(
         default=43_200,
         gt=0,
@@ -84,9 +84,15 @@ class Settings(BaseSettings):
     fixtures_refresh_interval_seconds: int = Field(
         default=21_600, gt=0, description="Fixture quiet-period refresh seconds."
     )
-    fixtures_active_interval_seconds: int = Field(
-        default=1_800, gt=0, description="Fixture refresh seconds during matchweek activity."
+
+    # One active cadence shared by fixtures and standings.
+    active_refresh_interval_seconds: int = Field(
+        default=300,
+        gt=0,
+        description="Shared active-day refresh seconds for standings and fixtures.",
     )
+
+    # Preserve a separate recovery deadline when fixture retrieval fails.
     fixtures_failure_retry_seconds: int = Field(
         default=900,
         gt=0,
