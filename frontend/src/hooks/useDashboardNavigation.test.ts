@@ -24,6 +24,8 @@ it('defaults to paused and gives every view a full interval when playing', () =>
   act(() => vi.advanceTimersByTime(1))
   expect(result.current.view).toBe('fixtures')
   act(() => vi.advanceTimersByTime(60_000))
+  expect(result.current.view).toBe('club')
+  act(() => vi.advanceTimersByTime(60_000))
   expect(result.current.view).toBe('standings')
 })
 
@@ -69,7 +71,7 @@ it('restores browser preferences and removes timers on unmount', () => {
   expect(second.result.current.isRotating).toBe(true)
   expect(second.result.current.intervalSeconds).toBe(30)
   act(() => vi.advanceTimersByTime(30_000))
-  expect(second.result.current.view).toBe('standings')
+  expect(second.result.current.view).toBe('club')
 })
 
 it('falls back safely when stored settings are invalid', () => {

@@ -1,6 +1,6 @@
 /**
  * Poll the local FastAPI snapshot endpoints without coupling browser reads to provider I/O.
- * Both screens keep this hook mounted so navigation retains last-known-good display data.
+ * Dataset screens keep this hook mounted so navigation retains last-known-good display data.
  */
 import { useEffect, useState } from 'react'
 

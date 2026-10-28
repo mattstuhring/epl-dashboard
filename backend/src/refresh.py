@@ -266,12 +266,17 @@ class FixturesRefreshCoordinator:
         self._refresh_lock = Lock()
         self._refreshing = False
 
-    def get_state(self) -> FixturesStateResponse:
+    def get_state(self, *, team_id: int | None = None) -> FixturesStateResponse:
         """
         Return the latest local data and a freshness state without provider I/O.
 
+        Args:
+            team_id: Optional club identifier selecting its full saved season.
+                This changes only the read view, never the provider schedule.
+
         Returns:
             Last successful fixtures and refresh metadata suitable for the API.
+            With a team ID, include its full season; otherwise select two weeks.
         """
         now = self._now()
         fixtures, last_attempt_at, next_refresh_at, refresh_error = self._repository.read_state()
@@ -287,21 +292,22 @@ class FixturesRefreshCoordinator:
         else:
             status = "fresh"
 
-        return FixturesStateResponse(
-            fixtures=(
-                fixtures.model_copy(
-                    update={
-                        "matches": tuple(
-                            match
-                            for match in fixtures.matches
-                            if match.matchday
-                            in {fixtures.current_matchday, fixtures.current_matchday + 1}
-                        )
-                    }
+        # Select a read-only view from this snapshot; neither branch changes storage or schedules.
+        selected_fixtures = None
+        if fixtures is not None:
+            if team_id is not None:
+                matches = tuple(
+                    match for match in fixtures.matches if team_id in {match.home.id, match.away.id}
                 )
-                if fixtures
-                else None
-            ),
+            else:
+                displayed_weeks = {fixtures.current_matchday, fixtures.current_matchday + 1}
+                matches = tuple(
+                    match for match in fixtures.matches if match.matchday in displayed_weeks
+                )
+            selected_fixtures = fixtures.model_copy(update={"matches": matches})
+
+        return FixturesStateResponse(
+            fixtures=selected_fixtures,
             refresh_status=status,
             last_attempt_at=last_attempt_at,
             last_success_at=fixtures.retrieved_at if fixtures else None,

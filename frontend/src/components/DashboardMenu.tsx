@@ -99,6 +99,12 @@ export function DashboardMenu({
         >
           Matchweeks
         </button>
+        <button
+          aria-current={view === 'club' ? 'page' : undefined}
+          onClick={() => chooseView('club')}
+        >
+          Your club
+        </button>
       </nav>
       <p className="drawer-label">Presentation & your club</p>
       <div className="dashboard-controls">

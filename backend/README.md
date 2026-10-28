@@ -197,3 +197,7 @@ An authenticated browser smoke check with a locally configured token tests live 
 ### Resource ownership
 
 The application lifespan registers cleanup immediately after opening each resource, including during partial startup failures. Blocking setup and cleanup run off the ASGI event loop. Shutdown waits for the refresh worker before closing its provider and repositories; do not run multiple Uvicorn workers against these process-local schedules.
+
+### Club fixture read
+
+`GET /api/clubs/{team_id}/fixtures` returns one club's full locally stored EPL season with the existing fixture freshness envelope. The ID must be positive. Unknown clubs return an empty match list; before the first saved season the fixture payload is null. This read neither contacts the provider nor changes schedules. `/api/fixtures` continues returning only current/next matchweeks.

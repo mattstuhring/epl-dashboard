@@ -184,7 +184,7 @@ class FixturesResponse(BaseModel):
     """
     Store one complete season's fixture state for atomic correction and retention.
 
-    The API exposes only the selected pair of weeks; retaining the season locally
+    The API selects a pair of weeks or one club’s fixtures; retaining the season locally
     allows activity scheduling without making extra per-week provider requests.
     """
 
@@ -212,14 +212,14 @@ class FixturesResponse(BaseModel):
 
 class FixturesStateResponse(BaseModel):
     """
-    Publish current and next numbered weeks with independent refresh metadata.
+    Publish a selected fixture view with independent refresh metadata.
 
-    The coordinator selects display weeks from the stored full season. Failed
+    The coordinator selects display weeks or a club’s fixtures from the stored full season. Failed
     attempts keep that snapshot available alongside a sanitized failure status.
     """
 
     fixtures: FixturesResponse | None = Field(
-        description="Selected weeks, null before first success."
+        description="Selected matchweeks or club season, null before first success."
     )
     refresh_status: Literal["pending", "refreshing", "fresh", "stale", "error"] = Field(
         description="Fixture refresh status."

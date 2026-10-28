@@ -10,7 +10,7 @@ provider refresh fails.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Path, Request
 
 from models import FixturesStateResponse, StandingsStateResponse
 from refresh import FixturesRefreshCoordinator, StandingsRefreshCoordinator
@@ -79,3 +79,23 @@ def get_fixtures(
         Last successful fixture weeks and independent refresh metadata.
     """
     return coordinator.get_state()
+
+
+@router.get("/clubs/{team_id}/fixtures", response_model=FixturesStateResponse)
+def get_club_fixtures(
+    team_id: Annotated[int, Path(gt=0)],
+    coordinator: Annotated[FixturesRefreshCoordinator, Depends(get_fixtures_refresh)],
+) -> FixturesStateResponse:
+    """
+    Read one club's saved EPL season for countdowns, results and recent form.
+
+    Args:
+        team_id: Positive provider club identifier, usually the browser favorite.
+        coordinator: Lifespan-owned fixture coordinator, injected by FastAPI.
+
+    Returns:
+        Filtered full-season fixtures with the existing dataset freshness state.
+        Unknown clubs have no matches; before initial retrieval fixtures is null.
+        No provider request or schedule change is performed by this read.
+    """
+    return coordinator.get_state(team_id=team_id)

@@ -10,10 +10,18 @@ import { TeamCrest } from './components/TeamCrest'
 import { StandingsTables } from './components/StandingsTables'
 import { useDashboardNavigation } from './hooks/useDashboardNavigation'
 import { useSupporterSignature } from './hooks/useSupporterSignature'
+import { ClubPage } from './components/ClubPage'
 import { DashboardMenu } from './components/DashboardMenu'
 import { useLocalDataset } from './hooks/useLocalDataset'
 import { readPreference, savePreference } from './preferences'
 import './App.css'
+
+// Shared title copy stays explicit as navigation grows beyond two screens.
+const viewCopy = {
+  standings: { title: 'League table', subtitle: 'Every place earned. Every point matters.' },
+  fixtures: { title: 'Matchweeks', subtitle: 'One match at a time. Watch the story unfold.' },
+  club: { title: 'Your club', subtitle: 'The badge. The belief. The next whistle.' },
+} as const
 
 /**
  * Connect saved preferences to the shared shell without remounting dataset screens.
@@ -76,13 +84,9 @@ function App() {
       <section className="view-toolbar" aria-labelledby="page-title">
         <div className="title-navigation">
           <div className="title-line">
-            <h1 id="page-title">{view === 'standings' ? 'League table' : 'Matchweeks'}</h1>
+            <h1 id="page-title">{viewCopy[view].title}</h1>
           </div>
-          <p className="view-subtitle">
-            {view === 'standings'
-              ? 'Every place earned. Every point matters.'
-              : 'One match at a time. Watch the story unfold.'}
-          </p>
+          <p className="view-subtitle">{viewCopy[view].subtitle}</p>
         </div>
         {favoriteTeam && (
           <div
@@ -192,6 +196,13 @@ function App() {
             </footer>
           )}
         </section>
+      </div>
+      <div className="screen-panel" hidden={view !== 'club'}>
+        {favoriteTeamId ? (
+          <ClubPage key={favoriteTeamId} teamId={favoriteTeamId} />
+        ) : (
+          <p className="message-panel">Choose your club in the menu once club data is available.</p>
+        )}
       </div>
       <DashboardMenu
         open={menuOpen}

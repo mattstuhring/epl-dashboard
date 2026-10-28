@@ -61,7 +61,7 @@ Team crests are now displayed in both standings and fixtures. HTTPS images come 
 
 New browsers start with rotation paused and a 60-second interval. Select a screen from the menu at any time; selecting any view (including the visible one) pauses rotation indefinitely. Use the small **soccer-ball toggle** beside the interval selector: a green background means auto-rotation is on; a muted ball means it is off. Hover text shows “Auto-rotate: On” or “Auto-rotate: Off”. Keyboard and screen-reader users can operate it as the Auto-rotate switch. There is no inactivity-based automatic resume and mouse movement alone does not change rotation.
 
-Use **Every** to select 30 seconds, 1 minute, 2 minutes, or 5 minutes per view. Starting rotation, changing the interval, or advancing to a new view gives that view a full interval. The carousel wraps between League table and Matchweeks. It does not change backend provider schedules; existing local API polling continues as before.
+Use **Every** to select 30 seconds, 1 minute, 2 minutes, or 5 minutes per view. Starting rotation, changing the interval, or advancing to a new view gives that view a full interval. The carousel wraps through League table, Matchweeks and Your club. It does not change backend provider schedules; existing local API polling continues as before.
 
 The browser remembers the selected view, whether rotation is enabled, and the interval in local storage (`epl.view`, `epl.rotationEnabled`, `epl.rotationIntervalSeconds`). A reload restores that preference; if rotation was enabled, it starts a fresh interval. These preferences belong to the Chromium profile and disappear if that profile/storage is cleared. The documented temporary kiosk profile under `/tmp` may be cleared on reboot; use a persistent browser profile when preferences must survive that.
 
@@ -102,3 +102,9 @@ Under **Supporter signature**, edit your surname (up to 24 characters) and shirt
 Use `npm run format` to apply the frontend formatting convention and `npm run format:check` to verify it. Run `npm run lint`, `npm test`, and `npm run build` for linting, offline behavior tests and TypeScript/production-build checks. Prettier is a development dependency, not part of the browser bundle.
 
 Components own presentation and interaction; hooks own polling and saved preferences; `api.ts` owns local HTTP reads. Polls are serialized, cancelled on unmount and aborted after a 15-second local request timeout. Failed reads retain the last successful response. Menu selection and backend provider schedules remain independent.
+
+## Your club
+
+Select **Your club** in the sidebar for your favorite's next EPL matchup and countdown, latest result and last five completed results. Changing Favorite club updates the screen. Kickoff times are Pacific; countdowns run locally. Unconfirmed times show Kickoff TBC; a kickoff that has passed shows Awaiting match update until provider status changes. Reported in-play/half-time states show saved scores, without an invented match clock. This view reads `/api/clubs/{team_id}/fixtures` from the same saved season and refresh schedule as Matchweeks, without additional provider calls. Cup fixtures, venue and head-to-head are not included.
+
+Recent form shows five consistent rows with W/D/L, home/away clubs and score, and matchweek. Beside it, season progress counts completed (FINISHED/AWARDED) saved fixtures against the 38-game EPL season, showing played and remaining games in a five-row, eight-column grid (38 game blocks and two blank spaces). Counts use the full saved season, not the five-result form list. Postponed/in-play games remain to play; freshness indicates how current the saved season is.

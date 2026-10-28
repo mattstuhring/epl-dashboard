@@ -25,3 +25,18 @@ export async function getFixtures(signal?: AbortSignal): Promise<FixturesState> 
   if (!response.ok) throw new Error('Matchweeks are temporarily unavailable.')
   return response.json() as Promise<FixturesState>
 }
+
+/**
+ * Read one club's full locally saved EPL season, without another upstream request.
+ * @param teamId Selected provider club identifier.
+ * @param signal Optional cancellation signal owned by the polling hook.
+ * @returns Fixture envelope using the same freshness metadata as Matchweeks.
+ */
+export async function getClubFixtures(
+  teamId: number,
+  signal?: AbortSignal,
+): Promise<FixturesState> {
+  const response = await fetch(`/api/clubs/${teamId}/fixtures`, { signal })
+  if (!response.ok) throw new Error('Your club is temporarily unavailable.')
+  return response.json() as Promise<FixturesState>
+}

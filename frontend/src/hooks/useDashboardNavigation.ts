@@ -4,7 +4,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { readPreference, savePreference } from '../preferences'
 
-export type DashboardView = 'standings' | 'fixtures'
+const dashboardViews = ['standings', 'fixtures', 'club'] as const
+export type DashboardView = (typeof dashboardViews)[number]
 export const rotationIntervals = [30, 60, 120, 300] as const
 
 /**
@@ -16,9 +17,10 @@ export const rotationIntervals = [30, 60, 120, 300] as const
  * Browser preferences survive reloads; data refresh schedules are independent.
  */
 export function useDashboardNavigation(suspended = false) {
-  const [view, setView] = useState<DashboardView>(() =>
-    readPreference('epl.view', 'standings') === 'fixtures' ? 'fixtures' : 'standings',
-  )
+  const [view, setView] = useState<DashboardView>(() => {
+    const saved = readPreference('epl.view', 'standings')
+    return saved === 'fixtures' || saved === 'club' ? saved : 'standings'
+  })
   const [isRotating, setIsRotating] = useState(
     () => readPreference('epl.rotationEnabled', 'false') === 'true',
   )
@@ -37,7 +39,10 @@ export function useDashboardNavigation(suspended = false) {
     if (!isRotating || suspended) return
 
     const timer = window.setTimeout(() => {
-      setView((current) => (current === 'standings' ? 'fixtures' : 'standings'))
+      setView((current) => {
+        const nextIndex = (dashboardViews.indexOf(current) + 1) % dashboardViews.length
+        return dashboardViews[nextIndex]
+      })
     }, intervalSeconds * 1000)
 
     return () => window.clearTimeout(timer)

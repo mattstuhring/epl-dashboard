@@ -87,7 +87,7 @@ function mockState(data: StandingsStateResponse = stateResponse(standings, 'fres
       .fn()
       .mockImplementation((url) =>
         Promise.resolve(
-          url === '/api/fixtures' ? fixtureResponse : { ok: true, json: async () => data },
+          url !== '/api/standings' ? fixtureResponse : { ok: true, json: async () => data },
         ),
       ),
   )
@@ -192,7 +192,7 @@ describe('standings dashboard', () => {
         json: async () => stateResponse(updatedStandings, 'fresh'),
       })
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/api/fixtures' ? Promise.resolve(fixtureResponse) : fetchMock(url),
+      url !== '/api/standings' ? Promise.resolve(fixtureResponse) : fetchMock(url),
     )
     vi.useFakeTimers()
 
