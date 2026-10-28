@@ -608,10 +608,6 @@ tbody .favorite-row {
   --position-color: #a55752;
 }
 
-.standings-grid .rank-cell[class*='-zone'] {
-  box-shadow: inset 3px 0 var(--position-color);
-}
-
 .standings-key {
   display: flex;
   flex-wrap: wrap;

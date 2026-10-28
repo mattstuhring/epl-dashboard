@@ -74,7 +74,7 @@ The League table view shows **Top** (positions 1–10) and **Bottom** (positions
 
 At viewport widths above 1100 pixels the panels sit side by side. At narrower widths they stack for normal browser scrolling. The landscape layout was visually checked at 1440×1080 with twenty sample clubs; resolution, browser zoom and long names can affect the fit on another display. This is a presentation change and does not alter API requests or refresh schedules.
 
-The shared position key marks Champions League places 1–4, Europa League place 5 and relegation places 18–20, using left-edge color identifiers and matching key swatches. These are configured display bands rather than calculated qualification outcomes.
+The shared position key marks Champions League places 1–4, Europa League place 5 and relegation places 18–20, using full-cell position colors with centered rank numbers and matching key swatches. These are configured display bands rather than calculated qualification outcomes.
 
 Favorite club is a global browser preference beside the carousel controls, available in both views once club data loads. It highlights standings and fixtures without filtering out other clubs.
 
@@ -108,3 +108,7 @@ Components own presentation and interaction; hooks own polling and saved prefere
 Select **Your club** in the sidebar for your favorite's next EPL matchup and countdown, latest result and last five completed results. Changing Favorite club updates the screen. Kickoff times are Pacific; countdowns run locally. Unconfirmed times show Kickoff TBC; a kickoff that has passed shows Awaiting match update until provider status changes. Reported in-play/half-time states show saved scores, without an invented match clock. This view reads `/api/clubs/{team_id}/fixtures` from the same saved season and refresh schedule as Matchweeks, without additional provider calls. Cup fixtures, venue and head-to-head are not included.
 
 Recent form shows five consistent rows with W/D/L, home/away clubs and score, and matchweek. Beside it, season progress counts completed (FINISHED/AWARDED) saved fixtures against the 38-game EPL season, showing played and remaining games in a five-row, eight-column grid (38 game blocks and two blank spaces). Counts use the full saved season, not the five-result form list. Postponed/in-play games remain to play; freshness indicates how current the saved season is.
+
+## Visual identity
+
+The After dark presentation uses a purple canvas, light data panels, mint accents and locally hosted Barlow/Barlow Condensed type. `App.css` owns existing responsive layout geometry; `broadcast.css` applies the visual identity; `index.css` holds shared tokens. `fonts.css` loads bundled fonts from `src/assets/fonts`, where their SIL Open Font License notices are retained. No Google Fonts request is needed at runtime. The club countdown is displayed as labelled days/hours/minutes blocks, with existing unknown-time and provider-status messages unchanged.

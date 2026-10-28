@@ -1,24 +1,22 @@
 :root {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-  color: #26332a;
-  background: #f4f5ef;
+  font-family: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+  color: #ffffff;
+  background: #22092e;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --paper: #fff;
-  --ink: #26332a;
-  --muted: #858b82;
-  --green: #47634c;
-  --line: #e4e7df;
+  --paper: #ffffff;
+  --ink: #2a0c3a;
+  --muted: #706279;
+  --green: #6333a5;
+  --line: #e9e4ee;
+  --accent: #03efb4;
+  --shell-ink: #ffffff;
+  --shell-muted: #c9bcd2;
+  --hero: #341045;
+  --heading-font: 'Barlow Condensed', 'Arial Narrow', sans-serif;
 }
 
 * {
@@ -37,6 +35,6 @@ select {
 }
 
 :focus-visible {
-  outline: 2px solid #6d8e69;
+  outline: 2px solid #9b67e2;
   outline-offset: 3px;
 }

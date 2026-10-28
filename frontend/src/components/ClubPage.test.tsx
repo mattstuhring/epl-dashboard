@@ -67,7 +67,7 @@ it('shows latest result and recent form with genuine zero scores', async () => {
     }),
   )
   render(<ClubPage teamId={66} />)
-  expect(await screen.findByText('2d · 4h · 30m')).toBeInTheDocument()
+  expect(await screen.findByLabelText('2d · 4h · 30m')).toBeInTheDocument()
   expect(screen.getAllByRole('listitem')).toHaveLength(5)
   expect(screen.getByLabelText('Draw')).toBeInTheDocument()
   expect(screen.getAllByText('0 – 0')).toHaveLength(1)

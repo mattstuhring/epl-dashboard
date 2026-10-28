@@ -72,7 +72,7 @@ export function StandingsTables({ rows, favoriteTeamId }: StandingsTablesProps) 
                     className={`rank-cell ${positionZone(row.position)}`}
                     title={positionLabel(row.position)}
                   >
-                    {row.position}
+                    <span className="rank-badge">{row.position}</span>
                   </td>
                   <th className="team-cell" scope="row">
                     <TeamCrest name={row.team_name} url={row.team_crest} /> {row.team_name}

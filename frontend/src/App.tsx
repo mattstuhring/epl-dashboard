@@ -15,6 +15,7 @@ import { DashboardMenu } from './components/DashboardMenu'
 import { useLocalDataset } from './hooks/useLocalDataset'
 import { readPreference, savePreference } from './preferences'
 import './App.css'
+import './broadcast.css'
 
 // Shared title copy stays explicit as navigation grows beyond two screens.
 const viewCopy = {

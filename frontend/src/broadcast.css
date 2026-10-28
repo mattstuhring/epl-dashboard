@@ -1,0 +1,434 @@
+/* Approved After dark identity. App.css retains responsive layout geometry;
+   this file owns the shared visual skin and the club's broadcast presentation. */
+.topbar {
+  border-color: #553362;
+}
+.wordmark,
+.menu-button {
+  color: var(--shell-ink);
+}
+.wordmark {
+  font-weight: 700;
+}
+.wordmark-name {
+  text-transform: uppercase;
+}
+.wordmark-mark {
+  background: var(--accent);
+  color: var(--ink);
+  border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 75%, 75% 100%, 0 100%);
+  font-family: var(--heading-font);
+  font-weight: 800;
+}
+.brand-tagline,
+.season-label,
+.view-subtitle {
+  color: var(--shell-muted);
+}
+.brand-tagline em {
+  font-style: normal;
+}
+.view-toolbar {
+  border-color: #553362;
+}
+h1 {
+  color: var(--shell-ink);
+  font-family: var(--heading-font);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+h1::after {
+  content: '.';
+  color: var(--accent);
+}
+.supporter-name {
+  color: var(--shell-ink);
+  font-weight: 700;
+}
+.supporter-club,
+.supporter-number {
+  color: var(--shell-muted);
+}
+.supporter-number {
+  font-family: var(--heading-font);
+  font-weight: 700;
+}
+/* A shared accent edge ties every data panel to the countdown treatment. */
+.table-card {
+  color: var(--ink);
+  border: 0;
+  border-top: 3px solid var(--accent);
+  border-radius: 0;
+  box-shadow: none;
+}
+.standings-grid caption,
+.matchweek-header {
+  color: var(--ink);
+  background: #f3eff8;
+  font-family: var(--heading-font);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.matchweek-header h2,
+.club-supporting h2,
+.drawer-heading h2 {
+  font-family: var(--heading-font);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.standings-grid caption,
+.fixtures-mode .matchweek-header h2 {
+  font-size: 26px;
+}
+thead {
+  background: #f3eff8;
+  color: var(--muted);
+}
+tbody tr {
+  color: #62536d;
+  border-color: var(--line);
+}
+tbody tr:hover {
+  background: #f8f5fc;
+}
+tbody .favorite-row,
+.favorite-fixture {
+  background: #e7fcf6;
+  color: var(--ink);
+}
+.favorite-fixture {
+  box-shadow: inset 3px 0 #078364;
+}
+.favorite-row .points-cell {
+  color: var(--ink);
+}
+.team-cell {
+  font-weight: 600;
+}
+.standings-key {
+  color: var(--shell-muted);
+}
+.champions-zone {
+  --position-color: #7046d2;
+}
+.europa-zone {
+  --position-color: #147f84;
+}
+.relegation-zone {
+  --position-color: #bd3f74;
+}
+.crest-fallback {
+  background: #ebe5f3;
+  color: var(--ink);
+}
+.fixture-score,
+.fixtures-mode .fixture-score {
+  background: #f0edf6;
+  color: var(--ink);
+}
+.fixtures-mode .fixture-score.kickoff-time {
+  background: transparent;
+}
+.match-in-play {
+  color: #08724f;
+}
+.table-footer,
+.dataset-freshness,
+.page-footer {
+  color: var(--shell-muted);
+}
+.freshness-details {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 4px 20px #15051c66;
+}
+.message-panel {
+  color: var(--shell-muted);
+}
+.error-panel {
+  color: #ffb7cc;
+}
+.stale-message {
+  color: #6e2547;
+  background: #ffe5ef;
+  border-color: #ecc2d2;
+}
+.refresh-message {
+  background: #341045;
+  color: var(--shell-muted);
+}
+
+/* Drawer controls remain high contrast on a light surface. */
+.dashboard-drawer {
+  border-color: var(--line);
+}
+.dashboard-drawer::backdrop {
+  background: #17071ec9;
+}
+.dashboard-drawer .menu-button {
+  color: var(--ink);
+}
+.drawer-navigation button {
+  border-radius: 0;
+}
+.drawer-navigation button[aria-current='page'] {
+  color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.rotation-toggle {
+  border-radius: 4px;
+}
+.rotation-toggle[aria-checked='true'] {
+  background: var(--accent);
+  border-color: #087c61;
+  box-shadow: none;
+}
+.rotation-toggle[aria-checked='false'] {
+  background: #eee8f4;
+}
+.signature-settings legend {
+  color: var(--muted);
+}
+.following-club {
+  color: var(--ink);
+}
+
+/* Quiet angular patterning belongs behind the feature, never behind result text. */
+.club-feature {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: var(--shell-ink);
+  background: var(--hero);
+}
+.club-feature::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    128deg,
+    transparent 0 66px,
+    #b366f526 67px 112px,
+    transparent 113px 147px
+  );
+  mask-image: linear-gradient(90deg, #000, transparent 36%, transparent 66%, #000);
+}
+.club-feature-heading {
+  color: var(--shell-muted);
+  letter-spacing: 0.1em;
+  font-size: 12px;
+}
+.club-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.club-eyebrow::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+}
+.club-feature .club-matchup {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.club-feature .club-matchup > div {
+  color: var(--shell-ink);
+  font-family: var(--heading-font);
+  font-weight: 700;
+  font-size: clamp(23px, 2vw, 32px);
+  text-transform: uppercase;
+}
+.club-feature .club-matchup .team-crest,
+.club-feature .club-matchup .crest-fallback {
+  width: 52px;
+  height: 52px;
+  line-height: 52px;
+}
+.club-feature .club-matchup > strong {
+  color: var(--shell-muted);
+  font-family: var(--heading-font);
+}
+.club-feature .club-kickoff {
+  color: var(--shell-muted);
+}
+.club-countdown {
+  font-family: var(--heading-font);
+  font-weight: 700;
+}
+.countdown-blocks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  width: max-content;
+  max-width: 100%;
+  margin: 16px auto 12px;
+  padding: 8px 30px;
+  background: var(--accent);
+  color: var(--ink);
+}
+.countdown-blocks > span {
+  display: grid;
+  gap: 3px;
+  position: relative;
+  min-width: 44px;
+}
+.countdown-blocks > span + span::before {
+  content: ':';
+  position: absolute;
+  left: -19px;
+  top: 0;
+  opacity: 0.5;
+  font-size: 34px;
+}
+.countdown-blocks strong {
+  font: 700 40px/1 var(--heading-font);
+  font-variant-numeric: tabular-nums;
+}
+.countdown-blocks small {
+  font:
+    700 11px/1.2 'Barlow',
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.countdown-status {
+  color: var(--shell-ink);
+}
+.club-supporting {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+}
+.club-supporting h2 {
+  font-size: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.season-counts {
+  align-items: baseline;
+}
+.season-counts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.season-counts strong {
+  font-family: var(--heading-font);
+  font-weight: 700;
+  font-size: 52px;
+}
+.season-counts span {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.season-track {
+  gap: 5px;
+}
+.season-track > span {
+  height: 18px;
+  border-radius: 0;
+  background: #e9e5f0;
+}
+.season-track > .is-played {
+  background: var(--accent);
+}
+.club-form .club-matchup > strong {
+  background: #f0edf6;
+  padding: 4px 6px;
+  font-weight: 700;
+}
+.form-mark {
+  border-radius: 0;
+  width: 22px;
+  height: 22px;
+  font-weight: 700;
+  background: #eae5f1;
+}
+.form-W {
+  background: #dcf6e9;
+  color: #206b4a;
+}
+.form-L {
+  background: #f6dfea;
+  color: #963361;
+}
+.form-D {
+  color: #625272;
+}
+@media (min-width: 1200px) and (min-height: 800px) {
+  h1 {
+    font-size: 44px;
+  }
+}
+@media (max-width: 1100px) {
+  .club-supporting {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 540px) {
+  .brand-tagline {
+    display: none;
+  }
+  .countdown-blocks {
+    gap: 22px;
+    padding: 8px 20px;
+  }
+  .countdown-blocks > span + span::before {
+    left: -15px;
+  }
+  .season-counts > div {
+    display: grid;
+    gap: 8px;
+  }
+  .club-feature .club-matchup .team-crest,
+  .club-feature .club-matchup .crest-fallback {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+  }
+}
+
+/* Narrow matchups keep both crest/name groups in the same vertical order. */
+@media (max-width: 540px) {
+  .club-feature .club-matchup > div {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .club-feature .club-matchup .team-crest,
+  .club-feature .club-matchup .crest-fallback {
+    order: -1;
+  }
+}
+
+/* Position color fills the entire rank cell, with no inset badge or row-edge stripe. */
+.standings-grid .rank-column {
+  width: 44px;
+  text-align: center;
+}
+.standings-grid .rank-cell {
+  padding: 0;
+  text-align: center;
+}
+.rank-badge {
+  display: block;
+  min-width: 36px;
+  color: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.standings-grid .rank-cell[class*='-zone'] {
+  background: color-mix(in srgb, var(--position-color) 22%, var(--paper));
+  color: var(--ink);
+}

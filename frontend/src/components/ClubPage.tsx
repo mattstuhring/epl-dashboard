@@ -80,7 +80,7 @@ export function ClubPage({ teamId }: { teamId: number }) {
         {next ? (
           <>
             <Matchup match={next} />
-            <p className="club-countdown">{kickoffLabel(next, now)}</p>
+            <KickoffCountdown match={next} now={now} />
             <p className="club-kickoff">
               {next.kickoff ? kickoffFormatter.format(new Date(next.kickoff)) : 'Date TBC'} ·{' '}
               {next.home.id === teamId ? 'Home' : 'Away'}
@@ -194,6 +194,29 @@ function Matchup({ match }: { match: Fixture }) {
         <TeamCrest name={match.away.name} url={match.away.crest} />
         <span>{match.away.name}</span>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Render the existing countdown as a broadcast score strip, retaining a readable status fallback.
+ * @param props Selected saved match and current local clock instant.
+ * @returns Three labelled time blocks, or the provider/unknown-time status without invented timing.
+ */
+function KickoffCountdown({ match, now }: { match: Fixture; now: number }) {
+  const label = kickoffLabel(match, now)
+  const parts = label.match(/^(\d+)d · (\d+)h · (\d+)m$/)
+  if (!parts) return <p className="club-countdown countdown-status">{label}</p>
+
+  const units = ['Days', 'Hours', 'Mins']
+  return (
+    <div className="club-countdown countdown-blocks" aria-label={label}>
+      {units.map((unit, index) => (
+        <span key={unit}>
+          <strong>{parts[index + 1].padStart(2, '0')}</strong>
+          <small>{unit}</small>
+        </span>
+      ))}
     </div>
   )
 }
