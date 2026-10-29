@@ -1109,7 +1109,7 @@ tbody .favorite-row {
 }
 .club-supporting {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 22px;
   margin-top: 22px;
   align-items: stretch;

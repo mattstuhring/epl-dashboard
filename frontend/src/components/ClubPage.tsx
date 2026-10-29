@@ -96,6 +96,35 @@ export function ClubPage({ teamId }: { teamId: number }) {
         ))}
       </article>
       <div className="club-supporting">
+        <article className="table-card club-form club-history">
+          <div className="club-history-content">
+            <h2>Recent form</h2>
+            <p className="club-kickoff">Last five completed EPL matches · latest first</p>
+            {results.length ? (
+              <ol>
+                {results.map((match) => {
+                  // The selector has narrowed both scores before outcome calculation.
+                  const outcome = matchOutcome(match, teamId)
+
+                  return (
+                    <li key={match.id}>
+                      <span
+                        className={`form-mark form-${outcome.marker}`}
+                        aria-label={outcome.label}
+                      >
+                        {outcome.marker}
+                      </span>
+                      <Matchup match={match} />
+                      <span className="form-matchweek">Matchweek {match.matchday}</span>
+                    </li>
+                  )
+                })}
+              </ol>
+            ) : (
+              <p>Form will appear after completed matches.</p>
+            )}
+          </div>
+        </article>
         <article className="table-card club-season">
           <h2>The season so far</h2>
           <div className="season-counts">
@@ -128,35 +157,6 @@ export function ClubPage({ teamId }: { teamId: number }) {
           <p className="club-kickoff">
             {played} of {EPL_SEASON_GAMES} EPL games complete
           </p>
-        </article>
-        <article className="table-card club-form club-history">
-          <div className="club-history-content">
-            <h2>Recent form</h2>
-            <p className="club-kickoff">Last five completed EPL matches · latest first</p>
-            {results.length ? (
-              <ol>
-                {results.map((match) => {
-                  // The selector has narrowed both scores before outcome calculation.
-                  const outcome = matchOutcome(match, teamId)
-
-                  return (
-                    <li key={match.id}>
-                      <span
-                        className={`form-mark form-${outcome.marker}`}
-                        aria-label={outcome.label}
-                      >
-                        {outcome.marker}
-                      </span>
-                      <Matchup match={match} />
-                      <span className="form-matchweek">Matchweek {match.matchday}</span>
-                    </li>
-                  )
-                })}
-              </ol>
-            ) : (
-              <p>Form will appear after completed matches.</p>
-            )}
-          </div>
         </article>
       </div>
       <footer className="table-footer">
