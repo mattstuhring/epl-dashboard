@@ -344,8 +344,10 @@ tbody .favorite-row,
   background: var(--accent);
 }
 .club-form .club-matchup > strong {
+  min-width: clamp(62px, 6.5vw, 90px);
+  text-align: center;
   background: #f0edf6;
-  padding: 4px 6px;
+  padding: 6px 8px;
   font-weight: 700;
 }
 .form-mark {

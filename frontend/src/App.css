@@ -1127,11 +1127,11 @@ tbody .favorite-row {
 .club-form .club-matchup {
   flex: 1;
   min-width: 0;
-  gap: 10px;
+  gap: clamp(10px, 1.5vw, 20px);
 }
 .club-form .club-matchup > div {
   font-size: 14px;
-  gap: 8px;
+  gap: clamp(8px, 0.9vw, 12px);
 }
 .club-form .club-matchup > strong {
   font-size: 17px;
