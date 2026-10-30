@@ -17,8 +17,8 @@ export const statusLabels: Readonly<Record<string, string>> = {
 
 // EPL-only presentation: 20 clubs play each opponent home and away.
 export const EPL_SEASON_GAMES = 38
-// The visual grid has five rows of eight; the last two cells are intentionally unused.
-export const SEASON_GRID_CELLS = 5 * 8
+// The visual grid has six rows of seven; the last four cells are intentionally unused.
+export const SEASON_GRID_CELLS = 6 * 7
 
 /**
  * A score-known outcome from the selected club's perspective.

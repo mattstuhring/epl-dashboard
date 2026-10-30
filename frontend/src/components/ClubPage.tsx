@@ -150,17 +150,19 @@ export function ClubPage({
         </article>
         <SeasonRecord matches={data.matches} teamId={teamId} />
       </div>
-      <SeasonJourney matches={data.matches} currentMatchday={data.current_matchday} />
-      <footer className="table-footer">
-        <span>EPL only · Scores update periodically</span>
-        <DatasetFreshness
-          datasetName="Club fixtures"
-          isFresh={!error && ['fresh', 'refreshing'].includes(state.refresh_status)}
-          hasError={Boolean(error || state.refresh_error)}
-          lastSuccessAt={data.retrieved_at}
-          nextRefreshAt={state.next_refresh_at}
-        />
-      </footer>
+      <SeasonJourney
+        matches={data.matches}
+        currentMatchday={data.current_matchday}
+        freshness={
+          <DatasetFreshness
+            datasetName="Club fixtures"
+            isFresh={!error && ['fresh', 'refreshing'].includes(state.refresh_status)}
+            hasError={Boolean(error || state.refresh_error)}
+            lastSuccessAt={data.retrieved_at}
+            nextRefreshAt={state.next_refresh_at}
+          />
+        }
+      />
     </section>
   )
 }

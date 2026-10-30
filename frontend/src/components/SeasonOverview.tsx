@@ -2,8 +2,8 @@
  * Present the saved season result grid and a separate provider-numbered matchweek journey.
  * These views reuse club fixtures; neither introduces polling or provider calls.
  */
-import { useId, type CSSProperties } from 'react'
-import seasonRunner from '../assets/illustrations/season-run-player.png'
+import type { CSSProperties, ReactNode } from 'react'
+import seasonRunner from '../assets/illustrations/soccer-player-outline.svg'
 import type { Fixture } from '../types'
 import {
   EPL_SEASON_GAMES,
@@ -13,9 +13,9 @@ import {
 } from '../clubPresentation'
 
 /**
- * Present inline played/remaining totals above a five-by-eight W/D/L season grid.
+ * Present inline played/remaining totals above a six-row, seven-column W/D/L season grid.
  * @param props Full club season and favorite identity for W/D/L colors and letters.
- * @returns Thirty-eight game cells and two unused spaces; missing scores stay unknown.
+ * @returns Thirty-eight game cells and four unused spaces; missing scores stay unknown.
  */
 export function SeasonRecord({ matches, teamId }: { matches: Fixture[]; teamId: number }) {
   const { played, remaining, results, hasMissingResults } = seasonRecord(matches, teamId)
@@ -62,15 +62,17 @@ export function SeasonRecord({ matches, teamId }: { matches: Fixture[]; teamId: 
 
 /**
  * Show provider matchweek progress with a footballer above the current week.
- * @param props Saved club fixtures for played totals, plus the provider-selected current matchweek.
+ * @param props Saved fixtures for accessible totals, provider current week, and shared freshness content.
  * @returns Accessible week progress out of 38; played totals remain independent of postponements.
  */
 export function SeasonJourney({
   matches,
   currentMatchday,
+  freshness,
 }: {
   matches: Fixture[]
   currentMatchday: number
+  freshness?: ReactNode
 }) {
   const { played, remaining } = seasonProgress(matches)
   const week = Math.min(EPL_SEASON_GAMES, Math.max(1, currentMatchday))
@@ -80,9 +82,7 @@ export function SeasonJourney({
     <section className="season-journey" aria-label="The season run" style={style}>
       <header>
         <h2>The season run</h2>
-        <p>
-          <strong>{played}</strong> played <span>·</span> <strong>{remaining}</strong> to go
-        </p>
+        {freshness}
       </header>
       <div
         className="season-journey-track"
@@ -119,38 +119,14 @@ export function SeasonJourney({
 }
 
 /**
- * Own the decorative player asset, scoped halo cleanup, and static motion trails.
+ * Present the traced vector player above the current-week football.
  * @returns Accessible-hidden illustration; CSS positions it behind the current-week football.
  */
 function SeasonRunner() {
-  const crispFilterId = useId()
   return (
-    <>
-      <svg
-        className="season-runner-filter"
-        width="0"
-        height="0"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <defs>
-          <filter id={crispFilterId}>
-            {/* Remove the generated asset's translucent halo without dimming the solid silhouette. */}
-            <feComponentTransfer>
-              <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1" />
-            </feComponentTransfer>
-          </filter>
-        </defs>
-      </svg>
-      <div className="season-runner" aria-hidden="true">
-        <div className="season-runner-trails">
-          <span />
-          <span />
-          <span />
-        </div>
-        <img src={seasonRunner} alt="" style={{ filter: `url(#${crispFilterId})` }} />
-      </div>
-    </>
+    <div className="season-runner" aria-hidden="true">
+      <img src={seasonRunner} alt="" />
+    </div>
   )
 }
 

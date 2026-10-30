@@ -30,7 +30,7 @@ it('uses all season results from the club perspective and flags unknown awarded 
     />,
   )
   expect(screen.getByText('8')).toBeInTheDocument()
-  expect(container.querySelectorAll('.season-results > li')).toHaveLength(40)
+  expect(container.querySelectorAll('.season-results > li')).toHaveLength(42)
   expect(screen.getAllByLabelText('Not played')).toHaveLength(30)
   expect(screen.getByLabelText('Result unavailable')).toHaveTextContent('?')
   expect(container.querySelectorAll('.season-results .form-W')).toHaveLength(7)

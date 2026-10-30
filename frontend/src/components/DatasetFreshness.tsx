@@ -1,5 +1,5 @@
 /**
- * Present compact dataset age and planned attempt times in a consistent footer.
+ * Present reusable compact dataset age and planned attempt times in headers or footers.
  * The local timer updates relative labels; it never fetches data or changes refresh policy.
  */
 import { useEffect, useState } from 'react'

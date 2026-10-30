@@ -68,6 +68,12 @@ it('shows latest result and recent form with genuine zero scores', async () => {
   )
   const { rerender } = render(<ClubPage teamId={66} />)
   expect(await screen.findByLabelText('2d · 4h · 30m')).toBeInTheDocument()
+  const journey = screen.getByRole('region', { name: 'The season run' })
+  const freshness = screen.getByRole('group', { name: 'Club fixtures data freshness' })
+  expect(journey).toContainElement(freshness)
+  expect(freshness.closest('header')).toContainElement(screen.getByText('The season run'))
+  expect(screen.queryByText('EPL only · Scores update periodically')).not.toBeInTheDocument()
+  expect(within(journey).queryByText(/to go/)).not.toBeInTheDocument()
   expect(screen.getAllByText('Standings unavailable')).toHaveLength(2)
   const standings: StandingsResponse = {
     competition_id: 2021,
