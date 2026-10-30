@@ -201,3 +201,5 @@ The application lifespan registers cleanup immediately after opening each resour
 ### Club fixture read
 
 `GET /api/clubs/{team_id}/fixtures` returns one club's full locally stored EPL season with the existing fixture freshness envelope. The ID must be positive. Unknown clubs return an empty match list; before the first saved season the fixture payload is null. This read neither contacts the provider nor changes schedules. `/api/fixtures` continues returning only current/next matchweeks.
+
+The worker rechecks due times at least once a minute while running to handle laptop sleep and wall-clock changes. These local checks do not add provider requests.

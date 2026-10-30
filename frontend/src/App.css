@@ -1163,40 +1163,7 @@ tbody .favorite-row {
   font-size: 11px;
   white-space: nowrap;
 }
-.season-counts {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 24px 0;
-}
-.season-counts > div {
-  display: grid;
-  gap: 8px;
-}
-.season-counts strong {
-  font:
-    400 52px/1 Georgia,
-    serif;
-  color: var(--ink);
-}
-.season-counts span {
-  font-size: 13px;
-  color: var(--muted);
-}
-.season-track {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 8px;
-}
-.season-track > span {
-  height: 24px;
-  background: var(--line);
-  border-radius: 3px;
-}
-.season-track > .is-played {
-  background: var(--green);
-}
+
 @media (max-width: 1100px) {
   .club-supporting {
     grid-template-columns: 1fr;
@@ -1292,20 +1259,10 @@ tbody .favorite-row {
   .club-supporting h2 {
     font-size: 24px;
   }
-  .season-counts {
-    padding: 16px 0;
-  }
-  .season-counts strong {
-    font-size: 44px;
-  }
+
   .club-form li {
     padding: 6px 0;
   }
-}
-
-/* Forty grid positions leave two blank spaces after the 38 season games. */
-.season-track > .is-unused {
-  visibility: hidden;
 }
 
 /* Equal edge columns keep the matchup centered regardless of provider status. */

@@ -8,15 +8,13 @@ import { useLocalDataset } from '../hooks/useLocalDataset'
 import type { Fixture, FixtureTeam, StandingsResponse, StandingsRow } from '../types'
 import { DatasetFreshness } from './DatasetFreshness'
 import { TeamCrest } from './TeamCrest'
+import { SeasonJourney, SeasonRecord } from './SeasonOverview'
 import {
   liveStatuses,
   statusLabels,
   selectClubMatches,
   kickoffLabel,
-  seasonProgress,
   matchOutcome,
-  EPL_SEASON_GAMES,
-  SEASON_GRID_CELLS,
 } from '../clubPresentation'
 
 const kickoffFormatter = new Intl.DateTimeFormat('en-US', {
@@ -59,7 +57,6 @@ export function ClubPage({
   }
 
   // Phase 1: Derive independent season totals and match presentation from the saved snapshot.
-  const { played, remaining } = seasonProgress(data.matches)
   const { next, results } = selectClubMatches(data.matches)
   // Independent snapshots must refer to the same season before showing comparison totals.
   const tableRows = standings?.season_id === data.season_id ? standings.rows : []
@@ -149,40 +146,9 @@ export function ClubPage({
             )}
           </div>
         </article>
-        <article className="table-card club-season">
-          <h2>The season so far</h2>
-          <div className="season-counts">
-            <div>
-              <strong>{played}</strong>
-              <span>Played</span>
-            </div>
-            <div>
-              <strong>{remaining}</strong>
-              <span>To play</span>
-            </div>
-          </div>
-          <div
-            className="season-track"
-            role="progressbar"
-            aria-label="Season games played"
-            aria-valuenow={played}
-            aria-valuemin={0}
-            aria-valuemax={EPL_SEASON_GAMES}
-            aria-valuetext={`${played} played, ${remaining} to play`}
-          >
-            {Array.from({ length: SEASON_GRID_CELLS }, (_, index) => {
-              // The last two positions complete the grid without inventing extra fixtures.
-              let cellClass: string | undefined
-              if (index >= EPL_SEASON_GAMES) cellClass = 'is-unused'
-              else if (index < played) cellClass = 'is-played'
-              return <span key={index} className={cellClass} aria-hidden="true" />
-            })}
-          </div>
-          <p className="club-kickoff">
-            {played} of {EPL_SEASON_GAMES} EPL games complete
-          </p>
-        </article>
+        <SeasonRecord matches={data.matches} teamId={teamId} />
       </div>
+      <SeasonJourney matches={data.matches} currentMatchday={data.current_matchday} />
       <footer className="table-footer">
         <span>EPL only · Scores update periodically</span>
         <DatasetFreshness

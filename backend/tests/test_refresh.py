@@ -330,3 +330,29 @@ def test_background_worker_performs_initial_refresh(tmp_path: Path) -> None:
 def test_settings_reject_nonpositive_refresh_intervals() -> None:
     with pytest.raises(ValueError):
         Settings(standings_failure_retry_seconds=-1)
+
+
+def test_worker_rechecks_after_clock_jump(tmp_path: Path, monkeypatch) -> None:
+    """
+    Simulate waking after a deadline without sleeping or live provider access.
+    """
+    provider = SequenceProvider(sample_standings(), sample_standings())
+    repository = SQLiteStandingsRepository(tmp_path / "dashboard.sqlite3")
+    clock = FakeClock()
+    worker = RefreshWorker(make_coordinator(provider, repository, clock))
+    waits = []
+
+    def simulate_sleep(timeout):
+        waits.append(timeout)
+        if len(waits) == 1:
+            clock.advance(timedelta(hours=13))
+        else:
+            worker._stop_event.set()
+
+    monkeypatch.setattr(worker._stop_event, "wait", simulate_sleep)
+    try:
+        worker._run()
+        assert waits == [60, 60]
+        assert provider.calls == 2
+    finally:
+        repository.close()

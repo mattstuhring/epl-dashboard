@@ -17,7 +17,6 @@ export const statusLabels: Readonly<Record<string, string>> = {
 
 // EPL-only presentation: 20 clubs play each opponent home and away.
 export const EPL_SEASON_GAMES = 38
-export const SEASON_GRID_CELLS = 5 * 8
 
 /**
  * A final result with both reported scores; zero remains a genuine score.
@@ -42,6 +41,22 @@ export function seasonProgress(matches: Fixture[]) {
   const completed = matches.filter((match) => ['FINISHED', 'AWARDED'].includes(match.status)).length
   const played = Math.min(EPL_SEASON_GAMES, completed)
   return { played, remaining: EPL_SEASON_GAMES - played }
+}
+
+/**
+ * Select all score-known completed games chronologically for the season record.
+ * @param matches Full saved club season; awarded results require reported scores too.
+ * @returns Typed results without guessing outcomes for missing scores or unfinished games.
+ */
+export function seasonResults(matches: Fixture[]): CompletedFixture[] {
+  return matches
+    .filter(
+      (match): match is CompletedFixture =>
+        ['FINISHED', 'AWARDED'].includes(match.status) &&
+        match.home_score !== null &&
+        match.away_score !== null,
+    )
+    .sort((a, b) => (a.kickoff ?? '9999').localeCompare(b.kickoff ?? '9999') || a.id - b.id)
 }
 
 /**

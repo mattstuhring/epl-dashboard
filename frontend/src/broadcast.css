@@ -313,36 +313,7 @@ tbody .favorite-row,
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
 }
-.season-counts {
-  align-items: baseline;
-}
-.season-counts > div {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-.season-counts strong {
-  font-family: var(--heading-font);
-  font-weight: 700;
-  font-size: 52px;
-}
-.season-counts span {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.season-track {
-  gap: 5px;
-}
-.season-track > span {
-  height: 18px;
-  border-radius: 0;
-  background: #e9e5f0;
-}
-.season-track > .is-played {
-  background: var(--accent);
-}
+
 .club-form .club-matchup > strong {
   min-width: clamp(62px, 6.5vw, 90px);
   text-align: center;
@@ -366,6 +337,7 @@ tbody .favorite-row,
   color: #963361;
 }
 .form-D {
+  background: #eae5f1;
   color: #625272;
 }
 @media (min-width: 1200px) and (min-height: 800px) {
@@ -389,10 +361,7 @@ tbody .favorite-row,
   .countdown-blocks > span + span::before {
     left: -15px;
   }
-  .season-counts > div {
-    display: grid;
-    gap: 8px;
-  }
+
   .club-feature .club-matchup .team-crest,
   .club-feature .club-matchup .crest-fallback {
     width: 40px;
@@ -505,5 +474,204 @@ tbody .favorite-row,
   .club-preview-center {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+}
+
+/* The season record shares outcome marks with Recent form; progress owns the mint accent. */
+/* Preserve the original counters and 5x8 geometry; outcome classes share Recent form colors. */
+.season-counts {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 0;
+}
+.season-counts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.season-counts strong {
+  font: 700 44px var(--heading-font);
+}
+.season-counts span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.season-results {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0;
+  margin: 12px 0;
+  list-style: none;
+}
+.season-results > li {
+  display: grid;
+  place-items: center;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.season-results > .season-result-pending {
+  background: #e5e5e7;
+  color: var(--muted);
+}
+.season-results > .is-unused {
+  visibility: hidden;
+}
+@media (max-width: 540px) {
+  .season-counts > div {
+    display: grid;
+    gap: 8px;
+  }
+}
+/* Open timeline sits directly on the purple shell, without a card surface or border. */
+.season-journey {
+  overflow: hidden;
+  margin-top: 22px;
+  padding: 18px 2px 24px;
+  color: var(--shell-ink);
+}
+.season-journey header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 20px;
+}
+.season-journey h2 {
+  margin: 0;
+  font: 700 24px var(--heading-font);
+  text-transform: uppercase;
+}
+.season-journey header p {
+  margin: 0;
+  color: var(--shell-muted);
+  font-size: 14px;
+}
+.season-journey header strong {
+  color: var(--shell-ink);
+  font-weight: 600;
+}
+.season-journey header p span {
+  margin: 0 8px;
+}
+.season-journey-track {
+  position: relative;
+  padding-top: 130px;
+  margin-top: 12px;
+}
+.season-runner-filter {
+  position: absolute;
+  pointer-events: none;
+}
+.season-runner {
+  position: absolute;
+  width: 220px;
+  height: 150px;
+  bottom: 18px;
+  left: clamp(66px, calc(var(--journey-position) - 52px), calc(100% - 66px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+/* Short, quiet trails follow the marker; the silhouette stays visually dominant. */
+.season-runner-trails {
+  position: absolute;
+  top: 50px;
+  right: calc(100% - 60px);
+  width: clamp(56px, 9vw, 150px);
+  height: 44px;
+  color: var(--shell-ink);
+  opacity: 0.28;
+}
+.season-runner-trails > span {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.season-runner-trails > span:nth-child(2) {
+  top: 21px;
+  right: 8px;
+  width: 78%;
+}
+.season-runner-trails > span:nth-child(3) {
+  top: 42px;
+  right: 18px;
+  width: 90%;
+}
+/* Exclude the source ball's entire lower-right area, including its halo. */
+.season-runner img {
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 63% 70%, 63% 100%, 0 100%);
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.season-journey-dots {
+  display: grid;
+  grid-template-columns: repeat(38, minmax(0, 1fr));
+  gap: clamp(2px, 0.4vw, 8px);
+  align-items: center;
+  min-height: 18px;
+}
+.season-journey-dots > span {
+  display: block;
+  width: 100%;
+  max-width: 18px;
+  aspect-ratio: 1;
+  justify-self: center;
+  border-radius: 50%;
+  background: #8c8194;
+}
+.season-journey-dots > .is-played {
+  background: var(--accent);
+}
+.season-journey-dots > .is-current {
+  width: 22px;
+  height: 22px;
+  max-width: none;
+  background: transparent;
+  transform: scale(1.55);
+}
+.season-week-ball {
+  aspect-ratio: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.season-journey-position {
+  position: absolute;
+  top: 0;
+  left: clamp(28px, var(--journey-position), calc(100% - 28px));
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--shell-ink);
+  font-size: 12px;
+}
+.season-journey-labels {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--shell-muted);
+  font-size: 12px;
+  margin-top: 17px;
+  padding-bottom: 4px;
+}
+@media (max-width: 650px) {
+  .season-journey-track {
+    padding-top: 130px;
+  }
+  .season-journey-dots {
+    gap: 2px;
   }
 }

@@ -482,7 +482,7 @@ class RefreshWorker:
 
     def _run(self) -> None:
         """
-        Refresh when due, then sleep until due or application shutdown.
+        Refresh when due, rechecking wall-clock deadlines at least once a minute.
         """
         while not self._stop_event.is_set():
             try:
@@ -502,8 +502,9 @@ class RefreshWorker:
                 self._stop_event.wait(30)
                 continue
 
-            # Event.wait sleeps until the earliest deadline or an immediate stop signal.
-            self._stop_event.wait(wait_seconds if wait_seconds > 0 else 1)
+            # Suspend or clock changes can move wall time past a saved deadline
+            # while a relative wait still has time left. Recheck without extra I/O.
+            self._stop_event.wait(min(wait_seconds, 60) if wait_seconds > 0 else 1)
 
 
 class MatchDayRefreshPolicy:

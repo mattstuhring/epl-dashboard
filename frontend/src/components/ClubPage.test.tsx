@@ -1,5 +1,5 @@
 /** Verify match selection and countdown states independently of live API access. */
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { Fixture, StandingsResponse } from '../types'
 import { ClubPage } from './ClubPage'
@@ -100,17 +100,23 @@ it('shows latest result and recent form with genuine zero scores', async () => {
   expect(screen.getAllByText('Standings unavailable')).toHaveLength(1)
   rerender(<ClubPage teamId={66} standings={{ ...standings, season_id: 2 }} />)
   expect(screen.getAllByText('Standings unavailable')).toHaveLength(2)
-  expect(screen.getAllByRole('listitem')).toHaveLength(5)
-  expect(screen.getByLabelText('Draw')).toBeInTheDocument()
+  expect(
+    within(screen.getByText('Recent form').closest('article')!).getAllByRole('listitem'),
+  ).toHaveLength(5)
+  expect(screen.getAllByLabelText('Draw')).toHaveLength(2)
   expect(screen.getAllByText('0 – 0')).toHaveLength(1)
-  expect(screen.getByRole('progressbar', { name: 'Season games played' })).toHaveAttribute(
+  expect(screen.getByRole('progressbar', { name: 'Season matchweek' })).toHaveAttribute(
     'aria-valuenow',
-    '6',
+    '10',
   )
   expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '38')
-  expect(screen.getByText('32')).toBeInTheDocument()
   expect(
-    screen.getAllByRole('listitem').every((row) => row.textContent?.includes('Matchweek 10')),
+    within(screen.getByText('The season so far').closest('article')!).getByText('32'),
+  ).toBeInTheDocument()
+  expect(
+    within(screen.getByText('Recent form').closest('article')!)
+      .getAllByRole('listitem')
+      .every((row) => row.textContent?.includes('Matchweek 10')),
   ).toBe(true)
 })
 
