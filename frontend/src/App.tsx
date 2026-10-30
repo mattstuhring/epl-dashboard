@@ -200,7 +200,7 @@ function App() {
       </div>
       <div className="screen-panel" hidden={view !== 'club'}>
         {favoriteTeamId ? (
-          <ClubPage key={favoriteTeamId} teamId={favoriteTeamId} />
+          <ClubPage key={favoriteTeamId} teamId={favoriteTeamId} standings={standings} />
         ) : (
           <p className="message-panel">Choose your club in the menu once club data is available.</p>
         )}

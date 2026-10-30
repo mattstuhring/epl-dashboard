@@ -1,7 +1,7 @@
 /** Verify match selection and countdown states independently of live API access. */
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { Fixture } from '../types'
+import type { Fixture, StandingsResponse } from '../types'
 import { ClubPage } from './ClubPage'
 import { kickoffLabel, selectClubMatches, seasonProgress, matchOutcome } from '../clubPresentation'
 
@@ -66,8 +66,40 @@ it('shows latest result and recent form with genuine zero scores', async () => {
       }),
     }),
   )
-  render(<ClubPage teamId={66} />)
+  const { rerender } = render(<ClubPage teamId={66} />)
   expect(await screen.findByLabelText('2d · 4h · 30m')).toBeInTheDocument()
+  expect(screen.getAllByText('Standings unavailable')).toHaveLength(2)
+  const standings: StandingsResponse = {
+    competition_id: 2021,
+    competition_code: 'PL',
+    competition_name: 'Premier League',
+    season_id: 1,
+    season_start: '2026-08-01',
+    season_end: '2027-06-01',
+    current_matchday: 10,
+    retrieved_at: '2026-10-28T12:00:00Z',
+    rows: [
+      {
+        position: 11,
+        team_id: 66,
+        team_name: 'United',
+        played: 8,
+        won: 1,
+        drawn: 7,
+        lost: 0,
+        goals_for: 9,
+        goals_against: 8,
+        goal_difference: 1,
+        points: 10,
+      },
+    ],
+  }
+  rerender(<ClubPage teamId={66} standings={standings} />)
+  expect(screen.getByLabelText('United: 11th, 1 wins, 7 draws, 0 losses')).toBeInTheDocument()
+  expect(screen.getByText('L 0')).toBeInTheDocument()
+  expect(screen.getAllByText('Standings unavailable')).toHaveLength(1)
+  rerender(<ClubPage teamId={66} standings={{ ...standings, season_id: 2 }} />)
+  expect(screen.getAllByText('Standings unavailable')).toHaveLength(2)
   expect(screen.getAllByRole('listitem')).toHaveLength(5)
   expect(screen.getByLabelText('Draw')).toBeInTheDocument()
   expect(screen.getAllByText('0 – 0')).toHaveLength(1)

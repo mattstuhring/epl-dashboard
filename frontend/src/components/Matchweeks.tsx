@@ -27,9 +27,9 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 })
 const statusLabels: Record<string, string> = {
   FINISHED: 'FT',
-  IN_PLAY: 'In play',
-  PAUSED: 'Half-time',
-  LIVE: 'In play',
+  IN_PLAY: 'LIVE',
+  PAUSED: 'HT',
+  LIVE: 'LIVE',
   POSTPONED: 'Postponed',
   SUSPENDED: 'Suspended',
   CANCELLED: 'Cancelled',
@@ -169,11 +169,6 @@ function FixtureRow({ match, favoriteTeamId }: { match: Fixture; favoriteTeamId:
 
   return (
     <li className={`fixture-row ${favorite ? 'favorite-fixture' : ''}`}>
-      <div className="fixture-meta">
-        <span className={inPlay ? 'match-in-play' : ''}>
-          {statusLabels[match.status] ?? match.status.replaceAll('_', ' ')}
-        </span>
-      </div>
       <div className="fixture-teams">
         <div className="fixture-club">
           <TeamCrest name={match.home.name} url={match.home.crest} />
@@ -187,6 +182,23 @@ function FixtureRow({ match, favoriteTeamId }: { match: Fixture; favoriteTeamId:
           <span>{match.away.name}</span>
         </div>
       </div>
+      <span className={`fixture-status ${inPlay ? 'match-in-play' : ''}`}>
+        {match.status !== 'TIMED' && (
+          <span
+            aria-label={
+              match.status === 'PAUSED'
+                ? 'Half-time'
+                : match.status === 'FINISHED'
+                  ? 'Full-time'
+                  : inPlay
+                    ? 'In play'
+                    : undefined
+            }
+          >
+            {statusLabels[match.status] ?? match.status.replaceAll('_', ' ')}
+          </span>
+        )}
+      </span>
     </li>
   )
 }

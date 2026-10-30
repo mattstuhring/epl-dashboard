@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getClubFixtures } from '../api'
 import { useLocalDataset } from '../hooks/useLocalDataset'
-import type { Fixture } from '../types'
+import type { Fixture, FixtureTeam, StandingsResponse, StandingsRow } from '../types'
 import { DatasetFreshness } from './DatasetFreshness'
 import { TeamCrest } from './TeamCrest'
 import {
@@ -30,10 +30,16 @@ const kickoffFormatter = new Intl.DateTimeFormat('en-US', {
 })
 /**
  * Present next match, season progress and uniform recent results for the selected favorite.
- * @param props Club ID; the parent keys this component by ID to isolate saved snapshots.
+ * @param props Club ID and shared saved standings; the parent keys fixtures by club ID.
  * @returns Club screen with persistent data, explicit empty/failure states and shared freshness.
  */
-export function ClubPage({ teamId }: { teamId: number }) {
+export function ClubPage({
+  teamId,
+  standings = null,
+}: {
+  teamId: number
+  standings?: StandingsResponse | null
+}) {
   const load = useCallback((signal: AbortSignal) => getClubFixtures(teamId, signal), [teamId])
   const { state, error } = useLocalDataset(load)
   const [now, setNow] = useState(Date.now)
@@ -55,6 +61,8 @@ export function ClubPage({ teamId }: { teamId: number }) {
   // Phase 1: Derive independent season totals and match presentation from the saved snapshot.
   const { played, remaining } = seasonProgress(data.matches)
   const { next, results } = selectClubMatches(data.matches)
+  // Independent snapshots must refer to the same season before showing comparison totals.
+  const tableRows = standings?.season_id === data.season_id ? standings.rows : []
   const disruption = data.matches.filter(
     (match) =>
       ['POSTPONED', 'CANCELLED'].includes(match.status) &&
@@ -78,14 +86,30 @@ export function ClubPage({ teamId }: { teamId: number }) {
           {next && <span>Matchweek {next.matchday}</span>}
         </div>
         {next ? (
-          <>
-            <Matchup match={next} />
-            <KickoffCountdown match={next} now={now} />
-            <p className="club-kickoff">
-              {next.kickoff ? kickoffFormatter.format(new Date(next.kickoff)) : 'Date TBC'} ·{' '}
-              {next.home.id === teamId ? 'Home' : 'Away'}
-            </p>
-          </>
+          <div className="club-preview-grid">
+            <PreviewTeam
+              team={next.home}
+              row={tableRows.find((row) => row.team_id === next.home.id)}
+            />
+            <div className="club-preview-center">
+              {liveStatuses.has(next.status) &&
+                next.home_score !== null &&
+                next.away_score !== null && (
+                  <strong className="club-preview-score">
+                    {next.home_score} – {next.away_score}
+                  </strong>
+                )}
+              <KickoffCountdown match={next} now={now} />
+              <p className="club-kickoff">
+                {next.kickoff ? kickoffFormatter.format(new Date(next.kickoff)) : 'Date TBC'}
+              </p>
+              <p className="club-preview-venue">{next.home.id === teamId ? 'Home' : 'Away'}</p>
+            </div>
+            <PreviewTeam
+              team={next.away}
+              row={tableRows.find((row) => row.team_id === next.away.id)}
+            />
+          </div>
         ) : (
           <p>No upcoming EPL fixture is currently available.</p>
         )}
@@ -170,6 +194,38 @@ export function ClubPage({ teamId }: { teamId: number }) {
         />
       </footer>
     </section>
+  )
+}
+
+/**
+ * Present one next-match club with its saved season record, without inventing missing totals.
+ * @param props Fixture identity and matching-season standings row, when available.
+ * @returns Crest/name group with league position and W/D/L beneath it.
+ */
+function PreviewTeam({ team, row }: { team: FixtureTeam; row?: StandingsRow }) {
+  const suffixes: Record<string, string> = { one: 'st', two: 'nd', few: 'rd', other: 'th' }
+  const position = row
+    ? `${row.position}${suffixes[new Intl.PluralRules('en', { type: 'ordinal' }).select(row.position)]}`
+    : null
+  return (
+    <div className="club-preview-team">
+      <TeamCrest name={team.name} url={team.crest} />
+      <h3>{team.name}</h3>
+      {row ? (
+        <div
+          className="club-preview-record"
+          aria-label={`${team.name}: ${position}, ${row.won} wins, ${row.drawn} draws, ${row.lost} losses`}
+        >
+          <strong>{position}</strong>
+          <span aria-hidden="true">·</span>
+          <span>W {row.won}</span>
+          <span>D {row.drawn}</span>
+          <span>L {row.lost}</span>
+        </div>
+      ) : (
+        <p className="club-preview-record">Standings unavailable</p>
+      )}
+    </div>
   )
 }
 

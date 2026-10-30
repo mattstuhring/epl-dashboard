@@ -434,3 +434,76 @@ tbody .favorite-row,
   background: color-mix(in srgb, var(--position-color) 22%, var(--paper));
   color: var(--ink);
 }
+
+/* Balanced team groups flank the existing timer; records remain secondary. */
+.club-preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 8px 0 16px;
+}
+.club-preview-team {
+  text-align: center;
+  min-width: 0;
+}
+.club-preview-team .team-crest,
+.club-preview-team .crest-fallback {
+  width: 52px;
+  height: 56px;
+  line-height: 56px;
+  margin: 0 auto 12px;
+}
+.club-preview-team h3 {
+  font: 700 clamp(23px, 2vw, 32px) / 1.1 var(--heading-font);
+  text-transform: uppercase;
+  color: var(--shell-ink);
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.club-preview-record {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--shell-muted);
+  font-size: 14px;
+}
+.club-preview-record strong {
+  color: var(--shell-ink);
+  font-weight: 600;
+}
+.club-preview-center {
+  text-align: center;
+  min-width: 0;
+}
+.club-preview-center .club-countdown {
+  margin: 0 auto 14px;
+}
+.club-preview-center .club-kickoff {
+  margin: 0;
+}
+.club-preview-venue {
+  color: var(--shell-muted);
+  font-size: 12px;
+  margin: 5px 0 0;
+}
+.club-preview-score {
+  display: block;
+  font: 700 36px var(--heading-font);
+  margin-bottom: 8px;
+}
+@media (max-width: 850px) {
+  .club-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+  .club-preview-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

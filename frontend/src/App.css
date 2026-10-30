@@ -469,10 +469,6 @@ tbody .favorite-row {
   border-top: 1px solid var(--line);
 }
 
-.fixture-row .fixture-meta {
-  justify-content: flex-end;
-}
-
 .fixture-list {
   list-style: none;
   padding: 0;
@@ -1310,4 +1306,31 @@ tbody .favorite-row {
 /* Forty grid positions leave two blank spaces after the 38 season games. */
 .season-track > .is-unused {
   visibility: hidden;
+}
+
+/* Equal edge columns keep the matchup centered regardless of provider status. */
+.fixture-row {
+  display: grid;
+  grid-template-columns: var(--fixture-status-width) minmax(0, 1fr) var(--fixture-status-width);
+  --fixture-status-width: clamp(42px, 4vw, 72px);
+  align-items: center;
+  column-gap: 8px;
+}
+
+.fixture-row > .fixture-teams {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.fixture-status {
+  grid-column: 3;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.fixture-status.match-in-play {
+  color: #08724f;
 }
