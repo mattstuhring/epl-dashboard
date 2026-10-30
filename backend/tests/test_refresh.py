@@ -332,7 +332,7 @@ def test_settings_reject_nonpositive_refresh_intervals() -> None:
         Settings(standings_failure_retry_seconds=-1)
 
 
-def test_worker_rechecks_after_clock_jump(tmp_path: Path, monkeypatch) -> None:
+def test_worker_rechecks_after_clock_jump(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Simulate waking after a deadline without sleeping or live provider access.
     """
@@ -340,9 +340,9 @@ def test_worker_rechecks_after_clock_jump(tmp_path: Path, monkeypatch) -> None:
     repository = SQLiteStandingsRepository(tmp_path / "dashboard.sqlite3")
     clock = FakeClock()
     worker = RefreshWorker(make_coordinator(provider, repository, clock))
-    waits = []
+    waits: list[float | None] = []
 
-    def simulate_sleep(timeout):
+    def simulate_sleep(timeout: float | None = None) -> None:
         waits.append(timeout)
         if len(waits) == 1:
             clock.advance(timedelta(hours=13))

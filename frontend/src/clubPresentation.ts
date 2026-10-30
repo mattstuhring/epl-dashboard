@@ -17,6 +17,24 @@ export const statusLabels: Readonly<Record<string, string>> = {
 
 // EPL-only presentation: 20 clubs play each opponent home and away.
 export const EPL_SEASON_GAMES = 38
+// The visual grid has five rows of eight; the last two cells are intentionally unused.
+export const SEASON_GRID_CELLS = 5 * 8
+
+/**
+ * A score-known outcome from the selected club's perspective.
+ */
+export type MatchOutcome = { marker: 'W' | 'D' | 'L'; label: 'Win' | 'Draw' | 'Loss' }
+
+type SeasonResult = MatchOutcome | { marker: '?'; label: 'Result unavailable' }
+
+/**
+ * Identify completed games consistently for aggregate progress and the season grid.
+ * @param match Saved club fixture; no score is required for completion counting.
+ * @returns Whether the provider reports a final or awarded game.
+ */
+function isCompleted(match: Fixture): boolean {
+  return ['FINISHED', 'AWARDED'].includes(match.status)
+}
 
 /**
  * A final result with both reported scores; zero remains a genuine score.
@@ -38,34 +56,47 @@ function hasFinalScore(match: Fixture): match is CompletedFixture {
  * @returns Completed and remaining games out of 38; awarded games count, postponements do not.
  */
 export function seasonProgress(matches: Fixture[]) {
-  const completed = matches.filter((match) => ['FINISHED', 'AWARDED'].includes(match.status)).length
+  const completed = matches.filter(isCompleted).length
   const played = Math.min(EPL_SEASON_GAMES, completed)
   return { played, remaining: EPL_SEASON_GAMES - played }
 }
 
 /**
- * Select all score-known completed games chronologically for the season record.
- * @param matches Full saved club season; awarded results require reported scores too.
- * @returns Typed results without guessing outcomes for missing scores or unfinished games.
+ * Build the complete chronological season record, keeping unknown outcomes explicit.
+ * @param matches Full saved club fixtures; input order and scores are not mutated.
+ * @param teamId Selected club for home/away outcome interpretation.
+ * @returns Played/remaining counts, up to 38 completed result marks, and missing-score context.
  */
-export function seasonResults(matches: Fixture[]): CompletedFixture[] {
-  return matches
-    .filter(
-      (match): match is CompletedFixture =>
-        ['FINISHED', 'AWARDED'].includes(match.status) &&
-        match.home_score !== null &&
-        match.away_score !== null,
-    )
+export function seasonRecord(matches: Fixture[], teamId: number) {
+  const { played, remaining } = seasonProgress(matches)
+  const completed = matches
+    .filter(isCompleted)
     .sort((a, b) => (a.kickoff ?? '9999').localeCompare(b.kickoff ?? '9999') || a.id - b.id)
+    .slice(0, EPL_SEASON_GAMES)
+  const results: SeasonResult[] = completed.map((match) => {
+    if (match.home_score === null || match.away_score === null) {
+      return { marker: '?', label: 'Result unavailable' }
+    }
+    return matchOutcome(
+      { ...match, home_score: match.home_score, away_score: match.away_score },
+      teamId,
+    )
+  })
+  return {
+    played,
+    remaining,
+    results,
+    hasMissingResults: results.some((result) => result.marker === '?'),
+  }
 }
 
 /**
  * Describe the selected club's outcome without a non-null assertion or score fallback.
- * @param match A completed, score-known fixture selected for recent form.
+ * @param match A completed, score-known fixture from recent form or the full season.
  * @param teamId The club whose perspective determines W/D/L, including away matches.
  * @returns A concise marker and accessible label; no UI or storage side effects.
  */
-export function matchOutcome(match: CompletedFixture, teamId: number) {
+export function matchOutcome(match: CompletedFixture, teamId: number): MatchOutcome {
   const home = match.home.id === teamId
   const scored = home ? match.home_score : match.away_score
   const conceded = home ? match.away_score : match.home_score

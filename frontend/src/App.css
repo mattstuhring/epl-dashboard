@@ -1242,12 +1242,6 @@ tbody .favorite-row {
     margin: 14px 0 8px;
     font-size: clamp(30px, 2.5vw, 40px);
   }
-  .club-feature .club-matchup .team-crest,
-  .club-feature .club-matchup .crest-fallback {
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-  }
   .club-supporting {
     margin-top: 16px;
     gap: 18px;

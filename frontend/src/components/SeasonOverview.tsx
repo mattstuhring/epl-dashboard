@@ -1,53 +1,51 @@
 /**
- * Present the full saved season record and a separate 38-game progress journey.
+ * Present the saved season result grid and a separate provider-numbered matchweek journey.
  * These views reuse club fixtures; neither introduces polling or provider calls.
  */
 import { useId, type CSSProperties } from 'react'
 import seasonRunner from '../assets/illustrations/season-run-player.png'
 import type { Fixture } from '../types'
-import { EPL_SEASON_GAMES, matchOutcome, seasonProgress, seasonResults } from '../clubPresentation'
+import {
+  EPL_SEASON_GAMES,
+  SEASON_GRID_CELLS,
+  seasonProgress,
+  seasonRecord,
+} from '../clubPresentation'
 
 /**
- * Keep the original played/remaining counters and five-by-eight season grid.
+ * Present inline played/remaining totals above a five-by-eight W/D/L season grid.
  * @param props Full club season and favorite identity for W/D/L colors and letters.
  * @returns Thirty-eight game cells and two unused spaces; missing scores stay unknown.
  */
 export function SeasonRecord({ matches, teamId }: { matches: Fixture[]; teamId: number }) {
-  const outcomes = new Map(
-    seasonResults(matches).map((match) => [match.id, matchOutcome(match, teamId)]),
-  )
-  const completed = matches
-    .filter((match) => ['FINISHED', 'AWARDED'].includes(match.status))
-    .sort((a, b) => (a.kickoff ?? '9999').localeCompare(b.kickoff ?? '9999') || a.id - b.id)
-  const { played, remaining } = seasonProgress(matches)
+  const { played, remaining, results, hasMissingResults } = seasonRecord(matches, teamId)
+
   return (
     <article className="table-card club-season">
-      <h2>The season so far</h2>
-      <div className="season-counts">
-        <div>
-          <strong>{played}</strong>
-          <span>Played</span>
+      <header className="club-card-heading">
+        <h2>The season so far</h2>
+        <div className="season-counts">
+          <div>
+            <strong>{played}</strong>
+            <span>Played</span>
+          </div>
+          <div>
+            <strong>{remaining}</strong>
+            <span>To play</span>
+          </div>
         </div>
-        <div>
-          <strong>{remaining}</strong>
-          <span>To play</span>
-        </div>
-      </div>
+      </header>
       <ol className="season-results" aria-label="Full season results, oldest first">
-        {Array.from({ length: 5 * 8 }, (_, index) => {
+        {Array.from({ length: SEASON_GRID_CELLS }, (_, index) => {
           if (index >= EPL_SEASON_GAMES)
             return <li key={index} className="is-unused" aria-hidden="true" />
-          const match = index < played ? completed[index] : undefined
-          const outcome = match ? outcomes.get(match.id) : undefined
-          let label = 'Not played'
-          if (match) label = outcome?.label ?? 'Result unavailable'
+          const result = results[index]
+          const label = result?.label ?? 'Not played'
+          const cellClass =
+            result && result.marker !== '?' ? `form-${result.marker}` : 'season-result-pending'
           return (
-            <li
-              key={index}
-              className={outcome ? `form-${outcome.marker}` : 'season-result-pending'}
-              aria-label={label}
-            >
-              {outcome?.marker ?? (match ? '?' : '')}
+            <li key={index} className={cellClass} aria-label={label}>
+              {result?.marker ?? ''}
             </li>
           )
         })}
@@ -55,7 +53,7 @@ export function SeasonRecord({ matches, teamId }: { matches: Fixture[]; teamId: 
       <p className="club-kickoff">
         {played} of {EPL_SEASON_GAMES} EPL games complete
       </p>
-      {completed.slice(0, played).some((match) => !outcomes.has(match.id)) && (
+      {hasMissingResults && (
         <p className="club-kickoff">Some completed games have no reported score.</p>
       )}
     </article>
@@ -74,7 +72,6 @@ export function SeasonJourney({
   matches: Fixture[]
   currentMatchday: number
 }) {
-  const crispFilterId = useId()
   const { played, remaining } = seasonProgress(matches)
   const week = Math.min(EPL_SEASON_GAMES, Math.max(1, currentMatchday))
   const marker = ((week - 0.5) / EPL_SEASON_GAMES) * 100
@@ -94,40 +91,14 @@ export function SeasonJourney({
         aria-valuenow={week}
         aria-valuemin={1}
         aria-valuemax={EPL_SEASON_GAMES}
-        aria-valuetext={`Week ${week} of 38; ${played} games played, ${remaining} to play`}
+        aria-valuetext={`Week ${week} of ${EPL_SEASON_GAMES}; ${played} games played, ${remaining} to play`}
       >
-        <svg
-          className="season-runner-filter"
-          width="0"
-          height="0"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <defs>
-            <filter id={crispFilterId}>
-              {/* Remove the generated asset's translucent halo without dimming the solid silhouette. */}
-              <feComponentTransfer result="crispSilhouette">
-                <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1" />
-              </feComponentTransfer>
-            </filter>
-          </defs>
-        </svg>
-        <div className="season-runner" aria-hidden="true">
-          <div className="season-runner-trails">
-            <span />
-            <span />
-            <span />
-          </div>
-          <img src={seasonRunner} alt="" style={{ filter: `url(#${crispFilterId})` }} />
-        </div>
+        <SeasonRunner />
         <div className="season-journey-dots" aria-hidden="true">
           {Array.from({ length: EPL_SEASON_GAMES }, (_, index) => (
             <span
               key={index}
-              className={[
-                index < week - 1 ? 'is-played' : '',
-                index === week - 1 ? 'is-current' : '',
-              ]
+              className={[index < week - 1 ? 'is-past' : '', index === week - 1 ? 'is-current' : '']
                 .filter(Boolean)
                 .join(' ')}
             >
@@ -144,6 +115,42 @@ export function SeasonJourney({
         <span>Week 38</span>
       </div>
     </section>
+  )
+}
+
+/**
+ * Own the decorative player asset, scoped halo cleanup, and static motion trails.
+ * @returns Accessible-hidden illustration; CSS positions it behind the current-week football.
+ */
+function SeasonRunner() {
+  const crispFilterId = useId()
+  return (
+    <>
+      <svg
+        className="season-runner-filter"
+        width="0"
+        height="0"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <filter id={crispFilterId}>
+            {/* Remove the generated asset's translucent halo without dimming the solid silhouette. */}
+            <feComponentTransfer>
+              <feFuncA type="discrete" tableValues="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1" />
+            </feComponentTransfer>
+          </filter>
+        </defs>
+      </svg>
+      <div className="season-runner" aria-hidden="true">
+        <div className="season-runner-trails">
+          <span />
+          <span />
+          <span />
+        </div>
+        <img src={seasonRunner} alt="" style={{ filter: `url(#${crispFilterId})` }} />
+      </div>
+    </>
   )
 }
 

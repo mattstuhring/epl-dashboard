@@ -56,7 +56,7 @@ export function ClubPage({
     )
   }
 
-  // Phase 1: Derive independent season totals and match presentation from the saved snapshot.
+  // Phase 1: Select the next fixture and recent results; only combine same-season standings.
   const { next, results } = selectClubMatches(data.matches)
   // Independent snapshots must refer to the same season before showing comparison totals.
   const tableRows = standings?.season_id === data.season_id ? standings.rows : []
@@ -119,8 +119,10 @@ export function ClubPage({
       <div className="club-supporting">
         <article className="table-card club-form club-history">
           <div className="club-history-content">
-            <h2>Recent form</h2>
-            <p className="club-kickoff">Last five completed EPL matches · latest first</p>
+            <header className="club-card-heading">
+              <h2>Recent form</h2>
+              <p className="club-kickoff">Last five completed EPL matches · latest first</p>
+            </header>
             {results.length ? (
               <ol>
                 {results.map((match) => {

@@ -24,6 +24,8 @@ from storage import SQLiteFixturesRepository, SQLiteStandingsRepository
 logger = logging.getLogger(__name__)
 SAFE_FIXTURES_ERROR = "The latest fixtures refresh failed."
 SAFE_REFRESH_ERROR = "The latest standings refresh failed."
+# Recheck persisted wall-clock deadlines after suspend without increasing provider cadence.
+MAX_WORKER_WAIT_SECONDS = 60.0
 
 
 class StandingsRefreshCoordinator:
@@ -452,7 +454,7 @@ class RefreshWorker:
         fixtures: FixturesRefreshCoordinator | None = None,
     ) -> None:
         """
-        Create the worker that sleeps until the earliest dataset is due.
+        Create the worker that rechecks due times within a bounded local wait.
 
         Args:
             coordinator: Standings schedule, executed after fixtures when present.
@@ -504,7 +506,9 @@ class RefreshWorker:
 
             # Suspend or clock changes can move wall time past a saved deadline
             # while a relative wait still has time left. Recheck without extra I/O.
-            self._stop_event.wait(min(wait_seconds, 60) if wait_seconds > 0 else 1)
+            self._stop_event.wait(
+                min(wait_seconds, MAX_WORKER_WAIT_SECONDS) if wait_seconds > 0 else 1
+            )
 
 
 class MatchDayRefreshPolicy:
