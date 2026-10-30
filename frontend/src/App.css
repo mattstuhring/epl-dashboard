@@ -454,6 +454,25 @@ tbody .favorite-row {
   color: var(--muted);
 }
 
+/* Dates belong to the day group; each match keeps its own status and kickoff/score. */
+.fixture-day-heading {
+  margin: 0;
+  padding: 8px 18px;
+  background: color-mix(in srgb, var(--ink) 10%, var(--paper));
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+
+.fixture-day + .fixture-day {
+  border-top: 1px solid var(--line);
+}
+
+.fixture-row .fixture-meta {
+  justify-content: flex-end;
+}
+
 .fixture-list {
   list-style: none;
   padding: 0;

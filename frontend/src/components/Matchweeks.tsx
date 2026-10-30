@@ -1,5 +1,5 @@
 /**
- * Present the provider-numbered current and next rounds from local saved fixture state.
+ * Present current and next rounds grouped by Pacific calendar day from saved fixture state.
  * Polling retains scores between navigation changes; no browser request calls the provider.
  */
 import { getFixtures } from '../api'
@@ -13,6 +13,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
   day: 'numeric',
+})
+const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Los_Angeles',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
 })
 const timeFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/Los_Angeles',
@@ -81,11 +87,20 @@ export function Matchweeks({ favoriteTeamId }: { favoriteTeamId: number | null }
                     <span>{matches.length} matches</span>
                   </header>
                   {matches.length ? (
-                    <ol className="fixture-list">
-                      {matches.map((match) => (
-                        <FixtureRow key={match.id} match={match} favoriteTeamId={favoriteTeamId} />
-                      ))}
-                    </ol>
+                    groupFixturesByDay(matches).map((day) => (
+                      <section className="fixture-day" key={day.key} aria-label={day.label}>
+                        <h3 className="fixture-day-heading">{day.label}</h3>
+                        <ol className="fixture-list">
+                          {day.matches.map((match) => (
+                            <FixtureRow
+                              key={match.id}
+                              match={match}
+                              favoriteTeamId={favoriteTeamId}
+                            />
+                          ))}
+                        </ol>
+                      </section>
+                    ))
                   ) : (
                     <p className="message-panel">No fixtures are available for this matchweek.</p>
                   )}
@@ -113,7 +128,27 @@ export function Matchweeks({ favoriteTeamId }: { favoriteTeamId: number | null }
 }
 
 /**
- * Present one matchup with its date, reported status and score or scheduled time.
+ * Group chronological fixtures by Pacific calendar date, placing unknown dates last.
+ * @param matches Fixtures already sorted by kickoff and stable provider ID.
+ * @returns Ordered date groups; Date TBC remains separate from all known calendar days.
+ */
+function groupFixturesByDay(matches: Fixture[]) {
+  const groups = new Map<string, { key: string; label: string; matches: Fixture[] }>()
+  for (const match of matches) {
+    const kickoff = match.kickoff ? new Date(match.kickoff) : null
+    const key = kickoff ? dayKeyFormatter.format(kickoff) : 'date-tbc'
+    let group = groups.get(key)
+    if (!group) {
+      group = { key, label: kickoff ? dateFormatter.format(kickoff) : 'Date TBC', matches: [] }
+      groups.set(key, group)
+    }
+    group.matches.push(match)
+  }
+  return [...groups.values()]
+}
+
+/**
+ * Present one matchup beneath its shared date heading, retaining individual provider status.
  * @param props Normalized match and selected favorite identity.
  * @returns A stable list row; unknown scores are never rendered as zero.
  */
@@ -135,7 +170,6 @@ function FixtureRow({ match, favoriteTeamId }: { match: Fixture; favoriteTeamId:
   return (
     <li className={`fixture-row ${favorite ? 'favorite-fixture' : ''}`}>
       <div className="fixture-meta">
-        <span>{kickoff ? dateFormatter.format(kickoff) : 'Date TBC'}</span>
         <span className={inPlay ? 'match-in-play' : ''}>
           {statusLabels[match.status] ?? match.status.replaceAll('_', ' ')}
         </span>

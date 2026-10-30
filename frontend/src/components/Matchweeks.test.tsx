@@ -70,3 +70,36 @@ it('uses an initials fallback when an image fails', async () => {
   fireEvent.error(container.querySelector('img')!)
   await waitFor(() => expect(screen.getByText('MA')).toBeInTheDocument())
 })
+
+it('groups by Pacific calendar day across UTC midnight and keeps unknown dates separate', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...state,
+        fixtures: {
+          ...state.fixtures,
+          matches: [
+            { ...fixture, id: 4, kickoff: null, status: 'POSTPONED' },
+            { ...fixture, id: 3, kickoff: '2026-10-25T08:00:00Z' },
+            { ...fixture, id: 2, kickoff: '2026-10-25T01:00:00Z' },
+            fixture,
+          ],
+        },
+      }),
+    }),
+  )
+  const { container } = render(<Matchweeks favoriteTeamId={66} />)
+  expect(await screen.findByRole('heading', { name: 'Sat, Oct 24' })).toBeInTheDocument()
+  const groups = container.querySelectorAll('.fixture-day')
+  expect([...groups].map((group) => group.getAttribute('aria-label'))).toEqual([
+    'Sat, Oct 24',
+    'Sun, Oct 25',
+    'Date TBC',
+  ])
+  expect(groups[0].querySelectorAll('.fixture-row')).toHaveLength(2)
+  expect(screen.getAllByText('Sat, Oct 24')).toHaveLength(1)
+  expect(screen.getByText('Postponed')).toBeInTheDocument()
+  expect(container.querySelectorAll('.favorite-fixture')).toHaveLength(4)
+})
