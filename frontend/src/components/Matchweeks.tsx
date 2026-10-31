@@ -69,6 +69,7 @@ export function Matchweeks({ favoriteTeamId }: { favoriteTeamId: number | null }
       )}
       {data && (
         <>
+          <MatchweekPitch edge="top" />
           <div className="matchweek-grid">
             {weeks.map((week) => {
               const matches = data.matches
@@ -109,7 +110,7 @@ export function Matchweeks({ favoriteTeamId }: { favoriteTeamId: number | null }
               )
             })}
           </div>
-          <MatchweekPitch />
+          <MatchweekPitch edge="bottom" />
           <footer className="table-footer">
             <span>Kickoffs in Pacific time · Scores update periodically</span>
             <DatasetFreshness

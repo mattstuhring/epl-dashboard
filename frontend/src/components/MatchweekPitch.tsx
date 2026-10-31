@@ -1,17 +1,20 @@
 /**
- * Own the static half-field illustration beneath the desktop matchweek panels.
+ * Own the static half-field illustrations framing the desktop matchweek panels.
  * Its shallow, artistic proportions prioritize fixture space over pitch dimensions.
  */
 
 /**
- * Render decorative vector linework without data, animation, or resize listeners.
+ * Render a green pitch with white markings, without data or animation.
+ * @param props Position in the frame; the bottom field is reflected vertically.
  * @returns An accessibility-hidden half-field; CSS reserves its desktop-only space.
  */
-export function MatchweekPitch() {
+export function MatchweekPitch({ edge }: { edge: 'top' | 'bottom' }) {
   return (
-    <div className="matchweek-pitch" aria-hidden="true">
+    <div className={`matchweek-pitch matchweek-pitch--${edge}`} aria-hidden="true">
       <svg viewBox="0 0 1800 150" preserveAspectRatio="none" focusable="false">
-        <g fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round">
+        <rect className="matchweek-pitch-surface" x="10" y="9" width="1780" height="132" />
+        <path fill="currentColor" d="M880 141A20 20 0 0 1 920 141Z" />
+        <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
           {/* Shared boundary edges are drawn once to keep the box joins uniform. */}
           <path
             vectorEffect="non-scaling-stroke"

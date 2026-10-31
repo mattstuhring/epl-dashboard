@@ -604,7 +604,10 @@ tbody .favorite-row,
   }
 }
 .matchweek-pitch {
-  color: var(--accent);
-  opacity: 0.85;
+  color: #ffffff;
   pointer-events: none;
+}
+
+.matchweek-pitch-surface {
+  fill: #439d88;
 }
