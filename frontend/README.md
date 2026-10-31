@@ -54,6 +54,8 @@ Choose **Matchweeks** from the dashboard menu to see the provider-numbered curre
 
 The view polls the local `/api/fixtures` endpoint 60 seconds after each completed local request while mounted; the backend owns provider polling. Loading, first-fetch errors, stale saved data and empty selected weeks are distinct states. A discreet footer shows the last successful update and next attempt using the same freshness component as standings.
 
+On desktop windows at least 1100px wide, a static mint half-field illustration sits beneath both panels on the plain purple background. Its intentionally shallow proportions use 80–120px of height, with connected boxes, a center semicircle and corner arcs; no placement dots or goal nets. It is hidden in narrower layouts and adds no requests or animation. Fixture rows keep their existing sizing; smaller windows and unusually long schedules may still scroll normally.
+
 Team crests are now displayed in both standings and fixtures. HTTPS images come from provider-supplied URLs, with initials when missing or failed. The browser may retrieve these images from the crest host; credentials are never sent with them. The backend fetches no image assets, and no additional frontend dependency is required. The selected view is saved in browser storage. View switching supports the optional carousel described below.
 
 

@@ -6,6 +6,7 @@ import { getFixtures } from '../api'
 import { useLocalDataset } from '../hooks/useLocalDataset'
 import type { Fixture } from '../types'
 import { DatasetFreshness } from './DatasetFreshness'
+import { MatchweekPitch } from './MatchweekPitch'
 import { TeamCrest } from './TeamCrest'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -108,6 +109,7 @@ export function Matchweeks({ favoriteTeamId }: { favoriteTeamId: number | null }
               )
             })}
           </div>
+          <MatchweekPitch />
           <footer className="table-footer">
             <span>Kickoffs in Pacific time · Scores update periodically</span>
             <DatasetFreshness

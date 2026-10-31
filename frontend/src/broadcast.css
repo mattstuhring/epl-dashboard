@@ -603,3 +603,8 @@ tbody .favorite-row,
     gap: 2px;
   }
 }
+.matchweek-pitch {
+  color: var(--accent);
+  opacity: 0.85;
+  pointer-events: none;
+}
