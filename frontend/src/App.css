@@ -1412,24 +1412,8 @@ tbody .favorite-row {
   margin-bottom: 4px;
 }
 
-.fixtures-mode .matchday-page .fixture-row {
-  padding: 12px 18px;
-}
-
+/* Keep both round cards equally compact so ten fixtures fit the kiosk viewport. */
+.fixtures-mode .matchday-page .fixture-row,
 .fixtures-mode .matchweek-page .fixture-row {
   padding: 6px 18px;
-}
-
-@media (min-width: 1200px) {
-  .matchday-page .fixture-club {
-    font-size: 19px;
-  }
-  .matchday-page .fixture-teams {
-    gap: 20px;
-  }
-  .matchday-page .team-crest,
-  .matchday-page .crest-fallback {
-    width: 34px;
-    height: 34px;
-  }
 }
