@@ -11,23 +11,23 @@
 export function MatchweekPitch({ edge }: { edge: 'top' | 'bottom' }) {
   return (
     <div className={`matchweek-pitch matchweek-pitch--${edge}`} aria-hidden="true">
-      <svg viewBox="0 0 1800 150" preserveAspectRatio="none" focusable="false">
-        <rect className="matchweek-pitch-surface" x="10" y="9" width="1780" height="132" />
-        <path fill="currentColor" d="M880 141A20 20 0 0 1 920 141Z" />
+      <svg viewBox="0 0 1800 100" preserveAspectRatio="none" focusable="false">
+        <rect className="matchweek-pitch-surface" x="10" y="9" width="1780" height="82" />
+        <path fill="currentColor" d="M887 91A13 13 0 0 1 913 91Z" />
         <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
           {/* Shared boundary edges are drawn once to keep the box joins uniform. */}
           <path
             vectorEffect="non-scaling-stroke"
-            d="M10 9H1790V141H10Z M900 9V141
-               M10 53.88H330.4V141 M1790 53.88H1469.6V141
-               M10 101.4H125.7V141 M1790 101.4H1674.3V141"
+            d="M10 9H1790V91H10Z M900 9V91
+               M10 37H330.4V91 M1790 37H1469.6V91
+               M10 66H125.7V91 M1790 66H1674.3V91"
           />
           {/* Semicircle, clipped penalty arcs, and quarter-circle corner markers. */}
           <path
             vectorEffect="non-scaling-stroke"
-            d="M814.2 141A85.8 85.8 0 0 1 985.8 141
-               M330.4 96.648A55.44 55.44 0 0 1 352.576 141
-               M1447.424 141A55.44 55.44 0 0 1 1469.6 96.648
+            d="M832 91A68 68 0 0 1 968 91
+               M330.4 63A35 35 0 0 1 344.4 91
+               M1455.6 91A35 35 0 0 1 1469.6 63
                M22 9A12 12 0 0 1 10 21
                M1778 9A12 12 0 0 0 1790 21"
           />

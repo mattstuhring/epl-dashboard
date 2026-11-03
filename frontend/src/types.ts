@@ -64,7 +64,7 @@ export type Fixture = {
   away_score: number | null
 }
 /**
- * Selected matchweeks or a club’s full season, with shared fixture refresh metadata.
+ * Selected matchweeks, the full season, or a club’s season, with shared fixture refresh metadata.
  */
 export type FixturesState = Omit<StandingsStateResponse, 'standings'> & {
   fixtures: {

@@ -22,6 +22,8 @@ it('defaults to paused and gives every view a full interval when playing', () =>
   act(() => vi.advanceTimersByTime(59_999))
   expect(result.current.view).toBe('standings')
   act(() => vi.advanceTimersByTime(1))
+  expect(result.current.view).toBe('matchday')
+  act(() => vi.advanceTimersByTime(60_000))
   expect(result.current.view).toBe('fixtures')
   act(() => vi.advanceTimersByTime(60_000))
   expect(result.current.view).toBe('club')
@@ -54,7 +56,7 @@ it('resuming or changing the interval discards the previous deadline', () => {
   act(() => vi.advanceTimersByTime(119_999))
   expect(result.current.view).toBe('standings')
   act(() => vi.advanceTimersByTime(1))
-  expect(result.current.view).toBe('fixtures')
+  expect(result.current.view).toBe('matchday')
 })
 
 it('restores browser preferences and removes timers on unmount', () => {
@@ -98,5 +100,11 @@ it('suspends rotation while the menu is open and resumes with a full interval', 
   act(() => vi.advanceTimersByTime(59_999))
   expect(result.current.view).toBe('standings')
   act(() => vi.advanceTimersByTime(1))
-  expect(result.current.view).toBe('fixtures')
+  expect(result.current.view).toBe('matchday')
+})
+
+it('restores the Matchday preference without losing the legacy fixtures screen', () => {
+  window.localStorage.setItem('epl.view', 'matchday')
+  const { result } = renderHook(useDashboardNavigation)
+  expect(result.current.view).toBe('matchday')
 })

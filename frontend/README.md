@@ -47,28 +47,25 @@ The automated UI tests use representative in-memory API responses and do not pro
 
 For a production-like local run, create the Vite build with `npm ci && npm run build`, then start the backend as described in [`backend/README.md`](../backend/README.md). When `frontend/dist/index.html` exists, FastAPI's `app.frontend()` serves the built page, its assets, and client-side navigation fallback at the same origin as `/api/*`. The generated `dist/` directory is gitignored, so rebuild after frontend source changes and restart Chromium to load the new bundle. Vite remains the development server for hot reload. The root README describes the intended Raspberry Pi hosting strategy at a high level.
 
+## Matchday, Matchweek and crests
 
-## Matchweek view and crests
+Choose **Matchday** for the API-selected current matchweek: all completed results, reported live/half-time games and still-scheduled fixtures remain together, grouped by Pacific date. The name identifies the current-round hub, not a single calendar day. It advances only when the provider advances the current matchweek.
 
-Choose **Matchweeks** from the dashboard menu to see the provider-numbered current round and following round as chronological lists. Dates and kickoff times use Pacific time; scores preserve zero versus unknown values. In-play, halftime, final, postponed and other statuses are labelled. Favorite-team matches use the standings view's chosen favorite.
+Choose **Matchweek** for the round immediately following the API-selected current matchweek. It shows that round's dates and scheduled kickoffs, retaining actual provider scores/statuses if any game has already been played. There is no round 39: at current matchweek 38 the outlook explicitly states there is no following round in this season. Neither page infers match status from the clock.
 
-The view polls the local `/api/fixtures` endpoint 60 seconds after each completed local request while mounted; the backend owns provider polling. Loading, first-fetch errors, stale saved data and empty selected weeks are distinct states. A discreet footer shows the last successful update and next attempt using the same freshness component as standings.
+Both screens share one serialized, cancellable poll of `/api/fixtures`, 60 seconds after each completed request. This existing endpoint reads the saved current/next rounds without triggering provider requests or changing schedules. Last-known-good data, zero/unknown score handling, favorite highlighting and freshness remain shared. Panels and freshness details sit in a centered column up to 1040px wide and use available width on smaller windows. The legacy `fixtures` view preference opens the following-round Matchweek page; Matchday has its own saved screen preference. Matchday has cyan-to-blue-to-violet angular side graphics recreated from the supplied reference as bundled transparent SVGs. The shapes stay in the viewport-edge gutters with at least 48px clearance from the card; they scale without distortion and are hidden below 1360px width. Matchweek frames its card with the supplied pitch photograph split vertically at its center: the original left half sits on the left and the right half on the right. The bundled image retains its proportions and colors, fills the card-column height and crops its outer edges for an abstract treatment; these decorative halves use the same desktop-only gutter placement and clearance. Earlier pitch/hero experiments remain outside both pages.
 
-On desktop windows at least 1100px wide, two static green half-fields frame the matchweek panels above and below, with the lower field reflected vertically. Each uses 35–55px of height and a 10px gap, sharing the previous single-field space rather than compressing fixture rows. All pitch areas have the same muted green fill, with thin white outlines and a filled white center marker. There is no glow or external goal net. Both illustrations are hidden in narrower layouts and add no requests or animation. Smaller windows and unusually long schedules may still scroll normally.
-
-Team crests are now displayed in both standings and fixtures. HTTPS images come from provider-supplied URLs, with initials when missing or failed. The browser may retrieve these images from the crest host; credentials are never sent with them. The backend fetches no image assets, and no additional frontend dependency is required. The selected view is saved in browser storage. View switching supports the optional carousel described below.
-
+Team crests use provider-supplied HTTPS URLs, with initials when missing or failed. The browser may retrieve images from the crest host; credentials are never sent with them. No additional dependency is required.
 
 ## Navigation and automatic rotation
 
 New browsers start with rotation paused and a 60-second interval. Select a screen from the menu at any time; selecting any view (including the visible one) pauses rotation indefinitely. Use the small **soccer-ball toggle** beside the interval selector: a green background means auto-rotation is on; a muted ball means it is off. Hover text shows “Auto-rotate: On” or “Auto-rotate: Off”. Keyboard and screen-reader users can operate it as the Auto-rotate switch. There is no inactivity-based automatic resume and mouse movement alone does not change rotation.
 
-Use **Every** to select 30 seconds, 1 minute, 2 minutes, or 5 minutes per view. Starting rotation, changing the interval, or advancing to a new view gives that view a full interval. The carousel wraps through League table, Matchweeks and Your club. It does not change backend provider schedules; existing local API polling continues as before.
+Use **Every** to select 30 seconds, 1 minute, 2 minutes, or 5 minutes per view. Starting rotation, changing the interval, or advancing to a new view gives that view a full interval. The carousel wraps through League table, Matchday, Matchweek and Your club. It does not change backend provider schedules; existing local API polling continues as before.
 
 The browser remembers the selected view, whether rotation is enabled, and the interval in local storage (`epl.view`, `epl.rotationEnabled`, `epl.rotationIntervalSeconds`). A reload restores that preference; if rotation was enabled, it starts a fresh interval. These preferences belong to the Chromium profile and disappear if that profile/storage is cleared. The documented temporary kiosk profile under `/tmp` may be cleared on reboot; use a persistent browser profile when preferences must survive that.
 
 Physical buttons, rotary controls and presence-aware displays remain future work. No GPIO or extra hardware dependencies are needed for the initial carousel.
-
 
 ## Split standings layout
 
@@ -79,7 +76,6 @@ At viewport widths above 1100 pixels the panels sit side by side. At narrower wi
 The shared position key marks Champions League places 1–4, Europa League place 5 and relegation places 18–20, using full-cell position colors with centered rank numbers and matching key swatches. These are configured display bands rather than calculated qualification outcomes.
 
 Favorite club is a global browser preference beside the carousel controls, available in both views once club data loads. It highlights standings and fixtures without filtering out other clubs.
-
 
 ## Display scaling
 
@@ -95,7 +91,7 @@ The landscape presentation uses slightly wider side margins, inward-facing club/
 
 Open the menu beside the brand to choose a screen, toggle automatic rotation, change its interval, or select your club. Opening the menu suspends rotation temporarily; closing it resumes an enabled carousel with a full interval. Choosing a screen pauses rotation until you enable it again. Escape, the close button, or the shaded backdrop dismisses the menu.
 
-Both datasets remain loaded while switching screens and continue polling the local API once per minute. This does not trigger provider requests. Screen changes have a brief fade, disabled for reduced-motion preferences; background data updates retain the existing tables. A full browser reload still restarts the app. Hover or focus the compact freshness summary for exact Pacific timestamps. “Next check” is the scheduled backend attempt, not a guarantee of new provider data.
+Standings and fixtures remain loaded while switching screens and continue polling the local API once per minute. Matchday and Matchweek share their fixture request. This does not trigger provider requests. Screen changes have a brief fade, disabled for reduced-motion preferences; background data updates retain the existing tables. A full browser reload still restarts the app. Hover or focus the compact freshness summary for exact Pacific timestamps. “Next check” is the scheduled backend attempt, not a guarantee of new provider data.
 
 Under **Supporter signature**, edit your surname (up to 24 characters) and shirt number (up to two digits). Changes appear immediately on both screens and save automatically in this browser. The signature displays the surname in uppercase; clearing a field hides that part. STUHRING and 9 are initial defaults. Preferences are specific to the browser profile and site address; configure them separately on the Pi. Clearing browser storage resets them. The crest and club name still follow your favorite club.
 

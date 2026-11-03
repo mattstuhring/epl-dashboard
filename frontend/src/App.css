@@ -433,7 +433,7 @@ tbody .favorite-row {
   align-items: start;
 }
 
-/* Both halves share the former decoration's space; fixture rows keep their sizing. */
+/* Give the artwork enough depth for readable pitch markings on the kiosk. */
 .matchweek-pitch {
   display: none;
 }
@@ -441,7 +441,7 @@ tbody .favorite-row {
 @media (min-width: 1100px) {
   .matchweek-pitch {
     display: block;
-    height: clamp(35px, calc((100dvh - 800px) * 0.225 - 5px), 55px);
+    height: clamp(75px, calc((100dvh - 800px) * 0.34), 95px);
   }
 
   .matchweek-pitch--top {
@@ -460,6 +460,13 @@ tbody .favorite-row {
 
   .matchweek-pitch--bottom svg {
     transform: scaleY(-1);
+  }
+}
+
+/* Recover the taller artwork's space from row padding, preserving type and crests. */
+@media (min-width: 1200px) and (min-height: 800px) {
+  .fixtures-mode .matchweek-grid .fixture-row {
+    padding-block: clamp(2px, calc((100dvh - 900px) / 20 - 4px), 5px);
   }
 }
 
@@ -1314,4 +1321,115 @@ tbody .favorite-row {
 
 .fixture-status.match-in-play {
   color: #08724f;
+}
+
+/* Keep fixture panels and their freshness details together in a centered column. */
+.fixture-view-frame {
+  width: min(100%, 1040px);
+  margin-inline: auto;
+}
+
+.matchday-stage,
+.matchweek-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Keep the artwork at the viewport edges, behind the opaque centered content. */
+.matchday-side-art,
+.matchweek-side-art {
+  display: none;
+}
+
+@media (min-width: 1360px) {
+  .matchday-side-art,
+  .matchweek-side-art {
+    display: block;
+    position: absolute;
+    inset: 0 calc((100% - 100vw) / 2);
+    overflow: clip;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .matchday-side-art img {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: min(300px, calc((100vw - 1040px) / 2 - 48px));
+    object-fit: contain;
+  }
+
+  .matchday-side-left {
+    left: 0;
+    object-position: left center;
+  }
+
+  .matchday-side-right {
+    right: 0;
+    object-position: right center;
+  }
+
+  /* Fill the card height; crop outer edges while keeping the source center split. */
+  .matchweek-photo-half {
+    position: absolute;
+    inset-block: 0;
+    width: calc((100vw - 1040px) / 2 - 48px);
+    overflow: hidden;
+  }
+
+  .matchweek-photo-left {
+    left: 0;
+  }
+
+  .matchweek-photo-right {
+    right: 0;
+  }
+
+  .matchweek-photo-half img {
+    position: absolute;
+    display: block;
+    width: auto;
+    max-width: none;
+    height: 100%;
+  }
+
+  .matchweek-photo-left img {
+    right: 0;
+    transform: translateX(50%);
+  }
+
+  .matchweek-photo-right img {
+    left: 0;
+    transform: translateX(-50%);
+  }
+}
+
+.fixture-view-context {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.fixtures-mode .matchday-page .fixture-row {
+  padding: 12px 18px;
+}
+
+.fixtures-mode .matchweek-page .fixture-row {
+  padding: 6px 18px;
+}
+
+@media (min-width: 1200px) {
+  .matchday-page .fixture-club {
+    font-size: 19px;
+  }
+  .matchday-page .fixture-teams {
+    gap: 20px;
+  }
+  .matchday-page .team-crest,
+  .matchday-page .crest-fallback {
+    width: 34px;
+    height: 34px;
+  }
 }

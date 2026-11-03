@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { readPreference, savePreference } from '../preferences'
 
-const dashboardViews = ['standings', 'fixtures', 'club'] as const
+const dashboardViews = ['standings', 'matchday', 'fixtures', 'club'] as const
 export type DashboardView = (typeof dashboardViews)[number]
 export const rotationIntervals = [30, 60, 120, 300] as const
 
@@ -19,7 +19,7 @@ export const rotationIntervals = [30, 60, 120, 300] as const
 export function useDashboardNavigation(suspended = false) {
   const [view, setView] = useState<DashboardView>(() => {
     const saved = readPreference('epl.view', 'standings')
-    return saved === 'fixtures' || saved === 'club' ? saved : 'standings'
+    return saved === 'fixtures' || saved === 'matchday' || saved === 'club' ? saved : 'standings'
   })
   const [isRotating, setIsRotating] = useState(
     () => readPreference('epl.rotationEnabled', 'false') === 'true',

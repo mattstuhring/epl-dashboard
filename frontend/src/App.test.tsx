@@ -229,13 +229,13 @@ it('provides rotation controls and pauses when a tab is selected', async () => {
     'aria-checked',
     'true',
   )
-  fireEvent.click(screen.getByRole('button', { name: 'Matchweeks' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Matchweek' }))
   openMenu()
   expect(screen.getByRole('switch', { name: 'Auto-rotate' })).toHaveAttribute(
     'aria-checked',
     'false',
   )
-  expect(screen.getByRole('heading', { name: 'Matchweeks', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Matchweek', level: 1 })).toBeInTheDocument()
   expect(window.localStorage.getItem('epl.rotationEnabled')).toBe('false')
   const favoritePicker = await screen.findByRole('combobox', { name: 'Favorite club' })
   fireEvent.change(favoritePicker, { target: { value: '57' } })
@@ -277,7 +277,7 @@ it('keeps fixture data mounted between screen changes without refetching', async
   await screen.findByRole('table')
   const initialRequests = vi.mocked(fetch).mock.calls.length
   openMenu()
-  fireEvent.click(screen.getByRole('button', { name: 'Matchweeks' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Matchweek' }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   openMenu()
   fireEvent.click(screen.getByRole('button', { name: 'League table' }))
@@ -294,7 +294,7 @@ it('edits the supporter signature across screens and restores it after reload', 
   fireEvent.change(screen.getByLabelText('Shirt number'), { target: { value: '10' } })
   fireEvent.change(screen.getByLabelText('Shirt number'), { target: { value: 'xx' } })
   expect(screen.getByLabelText('Shirt number')).toHaveValue('10')
-  fireEvent.click(screen.getByRole('button', { name: 'Matchweeks' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Matchweek' }))
   expect(
     screen.getByRole('group', { name: "O'NEILL, number 10, following Manchester United FC" }),
   ).toBeInTheDocument()

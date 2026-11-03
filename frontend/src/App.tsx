@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import { getStandings } from './api'
 import { DatasetFreshness } from './components/DatasetFreshness'
-import { Matchweeks } from './components/Matchweeks'
+import { FixturePages } from './components/FixturePages'
 import { TeamCrest } from './components/TeamCrest'
 import { StandingsTables } from './components/StandingsTables'
 import { useDashboardNavigation } from './hooks/useDashboardNavigation'
@@ -20,13 +20,14 @@ import './broadcast.css'
 // Shared title copy stays explicit as navigation grows beyond two screens.
 const viewCopy = {
   standings: { title: 'League table', subtitle: 'Every place earned. Every point matters.' },
-  fixtures: { title: 'Matchweeks', subtitle: 'One match at a time. Watch the story unfold.' },
+  matchday: { title: 'Matchday', subtitle: 'This round. Every match. Every moment.' },
+  fixtures: { title: 'Matchweek', subtitle: 'The next round. The fixtures ahead.' },
   club: { title: 'Your club', subtitle: 'The badge. The belief. The next whistle.' },
 } as const
 
 /**
  * Connect saved preferences to the shared shell without remounting dataset screens.
- * @returns Shared brand/title/menu chrome and both persistent dataset screens.
+ * @returns Shared brand/title/menu chrome and the persistent dashboard screens.
  */
 function App() {
   const { surname, setSurname, number, setNumber } = useSupporterSignature()
@@ -53,7 +54,9 @@ function App() {
   }, [preferredTeamId])
 
   return (
-    <main className={`dashboard-shell ${view === 'fixtures' ? 'fixtures-mode' : ''}`}>
+    <main
+      className={`dashboard-shell ${view === 'fixtures' || view === 'matchday' ? 'fixtures-mode' : ''}`}
+    >
       <header className="topbar">
         <div className="brand-controls">
           <button
@@ -104,9 +107,7 @@ function App() {
           </div>
         )}
       </section>
-      <div className="screen-panel" hidden={view !== 'fixtures'}>
-        <Matchweeks favoriteTeamId={favoriteTeamId} />
-      </div>
+      <FixturePages favoriteTeamId={favoriteTeamId} view={view} />
       <div className="screen-panel" hidden={view !== 'standings'}>
         <section className="standings-section" aria-label="Premier League standings">
           <div className="table-toolbar standings-toolbar">

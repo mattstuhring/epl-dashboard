@@ -16,13 +16,13 @@ export async function getStandings(signal?: AbortSignal): Promise<StandingsState
 }
 
 /**
- * Read the saved current/next matchweeks from FastAPI.
+ * Read the saved current and following rounds for the two fixture screens.
  * @param signal Optional cancellation signal owned by the polling hook.
  * @returns The fixture snapshot envelope; rejection leaves the caller's prior data intact.
  */
 export async function getFixtures(signal?: AbortSignal): Promise<FixturesState> {
   const response = await fetch('/api/fixtures', { signal })
-  if (!response.ok) throw new Error('Matchweeks are temporarily unavailable.')
+  if (!response.ok) throw new Error('Fixtures are temporarily unavailable.')
   return response.json() as Promise<FixturesState>
 }
 

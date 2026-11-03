@@ -92,12 +92,18 @@ export function DashboardMenu({
           League table
         </button>
         <button
-          aria-label="Matchweeks"
-          title="Matchweeks"
+          aria-current={view === 'matchday' ? 'page' : undefined}
+          onClick={() => chooseView('matchday')}
+        >
+          Matchday
+        </button>
+        <button
+          aria-label="Matchweek"
+          title="Matchweek"
           aria-current={view === 'fixtures' ? 'page' : undefined}
           onClick={() => chooseView('fixtures')}
         >
-          Matchweeks
+          Matchweek
         </button>
         <button
           aria-current={view === 'club' ? 'page' : undefined}
