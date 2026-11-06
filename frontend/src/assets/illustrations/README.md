@@ -8,7 +8,7 @@ The superseded generated PNG was removed; the app now uses vector artwork exclus
 
 ## Matchday side graphics
 
-`matchday-side-left.svg` and `matchday-side-right.svg` recreate the angular side motifs and cyan/blue/violet gradient in the user-supplied Premier League reference. They include only the side shapes, with a transparent background and no central wordmark or lion. The shapes retain their original orientation on each side rather than mirroring one image. `MatchdaySideArt` owns their decorative rendering; CSS confines them to the outer gutters, scales them proportionally and hides them on narrower windows. They are static bundled vectors and do not fetch remote assets.
+`matchday-side-left.svg` and `matchday-side-right.svg` recreate the angular side motifs in the user-supplied Premier League reference, recolored with a green-to-purple gradient (#03efb4 to #9738ff). They include only the side shapes, with a transparent background and no central wordmark or lion. The shapes retain their original orientation on each side rather than mirroring one image. `MatchdaySideArt` owns their decorative rendering; CSS confines them to the outer gutters, scales them proportionally and hides them on narrower windows. They are static bundled vectors and do not fetch remote assets.
 
 ## Matchweek split photograph
 

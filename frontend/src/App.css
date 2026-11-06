@@ -1353,21 +1353,22 @@ tbody .favorite-row {
   }
 
   .matchday-side-art img {
+    /* Cover the gutter and crop beyond the viewport, rather than floating a full motif. */
     position: absolute;
     top: 0;
     height: 100%;
-    width: min(300px, calc((100vw - 1040px) / 2 - 48px));
-    object-fit: contain;
+    width: calc((100vw - 1040px) / 2);
+    object-fit: cover;
   }
 
   .matchday-side-left {
-    left: 0;
-    object-position: left center;
+    left: -24px;
+    object-position: right center;
   }
 
   .matchday-side-right {
-    right: 0;
-    object-position: right center;
+    right: -24px;
+    object-position: left center;
   }
 
   /* Fill the card height; crop outer edges while keeping the source center split. */
