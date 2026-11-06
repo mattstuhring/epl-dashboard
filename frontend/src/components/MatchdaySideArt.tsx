@@ -1,9 +1,7 @@
 /**
- * Own the reference-matched cyan/blue/violet graphics in Matchday's outer gutters.
- * Transparent static SVGs preserve sharp shapes without covering fixture content.
+ * Own the green-to-purple reference graphics in Matchday's outer gutters.
+ * One seamless SVG mask repeats vertically beneath a continuous CSS gradient.
  */
-import leftSide from '../assets/illustrations/matchday-side-left.svg'
-import rightSide from '../assets/illustrations/matchday-side-right.svg'
 
 /**
  * Render non-interactive artwork; responsive CSS hides it when gutters are too narrow.
@@ -11,8 +9,8 @@ import rightSide from '../assets/illustrations/matchday-side-right.svg'
 export function MatchdaySideArt() {
   return (
     <div className="matchday-side-art" aria-hidden="true">
-      <img className="matchday-side-left" src={leftSide} alt="" />
-      <img className="matchday-side-right" src={rightSide} alt="" />
+      <div className="matchday-pattern matchday-side-left" />
+      <div className="matchday-pattern matchday-side-right" />
     </div>
   )
 }

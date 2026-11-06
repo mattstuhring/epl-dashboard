@@ -12,25 +12,20 @@ import { FixtureRow } from './FixtureList'
 export function FixtureRound({
   matches,
   week,
-  context,
+  title,
   favoriteTeamId,
 }: {
   matches: readonly Fixture[]
   week: number
-  context: string
+  title: string
   favoriteTeamId: number | null
 }) {
   const selected = matches.filter((match) => match.matchday === week)
   return (
     <article className="table-card matchweek-card">
       <header className="matchweek-header">
-        <div>
-          <span className="fixture-view-context">{context}</span>
-          <h2>Matchweek {week}</h2>
-        </div>
-        <span>
-          {selected.length} {selected.length === 1 ? 'match' : 'matches'}
-        </span>
+        <h2>{title}</h2>
+        <span>Matchweek {week}</span>
       </header>
       {selected.length ? (
         groupFixturesByDay(selected).map((day) => (

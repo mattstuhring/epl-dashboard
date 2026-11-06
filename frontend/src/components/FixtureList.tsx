@@ -1,5 +1,5 @@
 /**
- * Share date grouping and matchup presentation across the day and round views.
+ * Share matchup presentation across the current-round and next-round views.
  * Provider statuses and nullable scores retain their meaning in either layout.
  */
 import type { Fixture } from '../types'

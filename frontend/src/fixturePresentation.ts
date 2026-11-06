@@ -21,14 +21,14 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 /**
  * Return the Pacific calendar-day identity for an absolute instant.
  */
-export function pacificDayKey(date: Date): string {
+function pacificDayKey(date: Date): string {
   return dayKeyFormatter.format(date)
 }
 
 /**
- * Return readable Pacific date text with year for full-season browsing.
+ * Return readable Pacific date text with year, including rounds that span New Year.
  */
-export function fixtureDateLabel(date: Date): string {
+function fixtureDateLabel(date: Date): string {
   return dateFormatter.format(date)
 }
 

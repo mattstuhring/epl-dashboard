@@ -6,9 +6,9 @@
 
 The superseded generated PNG was removed; the app now uses vector artwork exclusively for the player and week ball.
 
-## Matchday side graphics
+## Matchday side pattern
 
-`matchday-side-left.svg` and `matchday-side-right.svg` recreate the angular side motifs in the user-supplied Premier League reference, recolored with a green-to-purple gradient (#03efb4 to #9738ff). They include only the side shapes, with a transparent background and no central wordmark or lion. The shapes retain their original orientation on each side rather than mirroring one image. `MatchdaySideArt` owns their decorative rendering; CSS confines them to the outer gutters, scales them proportionally and hides them on narrower windows. They are static bundled vectors and do not fetch remote assets.
+`matchday-pattern.svg` continues the supplied reference's central notched diagonal band on a 458-unit vertical cadence. The preceding crossing band is included so the tile's top and bottom alpha boundaries match. Both sides use this one mask in the same orientation. CSS repeats it vertically at a maximum 200px strip width and supplies one continuous green-to-purple gradient (#03efb4 to #9738ff). The pattern stays inside the dashboard's padded edges, clears the card by at least 24px and hides below 1360px. `MatchdaySideArt` owns its decorative, non-interactive markup. No remote asset or runtime drawing is needed.
 
 ## Matchweek split photograph
 

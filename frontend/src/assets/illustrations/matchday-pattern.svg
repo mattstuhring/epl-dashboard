@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 289 458" fill="white">
+  <!-- Continue the reference's central band at matching top/bottom boundaries. -->
+  <path transform="translate(0 -458)" d="M0 0L135 149H86L289 333V587L138 459H200L0 252Z"/>
+  <path d="M0 0L135 149H86L289 333V587L138 459H200L0 252Z"/>
+</svg>

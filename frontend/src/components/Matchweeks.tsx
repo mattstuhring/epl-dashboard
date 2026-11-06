@@ -21,7 +21,7 @@ export function Matchweeks({
         <FixtureRound
           matches={data.matches}
           week={data.current_matchday + 1}
-          context="Next round"
+          title="Next round"
           favoriteTeamId={favoriteTeamId}
         />
       ) : (

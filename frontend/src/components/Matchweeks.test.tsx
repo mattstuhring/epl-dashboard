@@ -59,28 +59,28 @@ it('shows the whole current round with completed, live and future fixtures acros
       favoriteTeamId={66}
     />,
   )
-  expect(screen.getByRole('heading', { name: 'Matchweek 8' })).toBeInTheDocument()
-  expect(screen.getByText('Current round')).toBeInTheDocument()
+  expect(screen.getByText('Matchweek 8')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Current round' })).toBeInTheDocument()
   expect(screen.getByText('0 – 2')).toBeInTheDocument()
   expect(screen.getByText('1 – 0')).toBeInTheDocument()
   expect(screen.getByLabelText('In play')).toHaveTextContent('LIVE')
   expect(screen.getByLabelText('Full-time')).toHaveTextContent('FT')
   expect(screen.getByText('10:00 AM')).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Matchweek 9' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Matchweek 9')).not.toBeInTheDocument()
 })
 
 it('shows only the following round and advances with the provider-selected round', () => {
   const { rerender } = render(<Matchweeks data={data} favoriteTeamId={66} />)
-  expect(screen.getByRole('heading', { name: 'Matchweek 9' })).toBeInTheDocument()
-  expect(screen.getByText('Next round')).toBeInTheDocument()
+  expect(screen.getByText('Matchweek 9')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Next round' })).toBeInTheDocument()
   expect(screen.queryByText('0 – 2')).not.toBeInTheDocument()
   expect(screen.queryByText('Scheduled')).not.toBeInTheDocument()
   rerender(<Matchweeks data={{ ...data, current_matchday: 9 }} favoriteTeamId={66} />)
-  expect(screen.getByRole('heading', { name: 'Matchweek 10' })).toBeInTheDocument()
+  expect(screen.getByText('Matchweek 10')).toBeInTheDocument()
   expect(screen.getByText('No fixtures are available for this matchweek.')).toBeInTheDocument()
   rerender(<Matchweeks data={{ ...data, current_matchday: 38 }} favoriteTeamId={66} />)
   expect(screen.getByText(/final matchweek/)).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Matchweek 39' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Matchweek 39')).not.toBeInTheDocument()
 })
 
 it('keeps Pacific date bands, unknown dates and favorite highlighting', () => {
@@ -113,7 +113,7 @@ it('updates the current-round hub when the provider advances rather than using t
   const { rerender } = render(<Matchday data={data} favoriteTeamId={66} />)
   expect(screen.getByText('0 – 2')).toBeInTheDocument()
   rerender(<Matchday data={{ ...data, current_matchday: 9 }} favoriteTeamId={66} />)
-  expect(screen.getByRole('heading', { name: 'Matchweek 9' })).toBeInTheDocument()
+  expect(screen.getByText('Matchweek 9')).toBeInTheDocument()
   expect(screen.queryByText('0 – 2')).not.toBeInTheDocument()
 })
 
@@ -129,7 +129,7 @@ it('shares one current/next poll between both screens and retains freshness', as
   })
   vi.stubGlobal('fetch', fetcher)
   const { rerender } = render(<FixturePages favoriteTeamId={66} view="fixtures" />)
-  expect(await screen.findByRole('heading', { name: 'Matchweek 9' })).toBeInTheDocument()
+  expect(await screen.findByText('Matchweek 9')).toBeInTheDocument()
   expect(screen.getByRole('group', { name: 'Fixtures data freshness' })).toBeInTheDocument()
   rerender(<FixturePages favoriteTeamId={66} view="matchday" />)
   expect(fetcher).toHaveBeenCalledTimes(1)
@@ -152,7 +152,7 @@ it('shows an initial provider failure without a successful empty schedule', asyn
   await waitFor(() =>
     expect(screen.getAllByText('Fixture data is not available yet.')).toHaveLength(2),
   )
-  expect(screen.queryByRole('heading', { name: 'Matchweek 8' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Matchweek 8')).not.toBeInTheDocument()
 })
 
 it('uses initials when a crest fails', async () => {
